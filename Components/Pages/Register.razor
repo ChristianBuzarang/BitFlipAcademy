@@ -1,0 +1,130 @@
+@page "/register"
+@using Microsoft.EntityFrameworkCore
+@using BitFlipBlazor.Data
+@using BitFlipBlazor.Models
+@inject AppDbContext Db
+@inject NavigationManager Nav
+
+<PageTitle>Agent Enrollment</PageTitle>
+
+<div class="login-container">
+    <img src="bitflip_logo.png" class="logo" alt="Bit-Flip Logo" style="max-width: 130px; margin-bottom: 15px;" />
+    <p style="color: var(--neon-teal); letter-spacing: 2px; font-weight: bold; margin-bottom: 20px;">ENROLL AGENT</p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p style="color: #ff4444; font-size: 13px; margin-bottom: 15px;">@errorMessage</p>
+    }
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <p style="color: #4ade80; font-size: 13px; margin-bottom: 15px;">@successMessage</p>
+    }
+
+    <div style="width: 320px;">
+        <label style="color: #8B949E; font-size: 11px; font-weight: bold; text-transform: uppercase;">Full Name</label>
+        <input type="text" 
+               class="input-field" 
+               placeholder="Cadet Name" 
+               @bind="name" 
+               required />
+
+        <label style="color: #8B949E; font-size: 11px; font-weight: bold; text-transform: uppercase;">Email Address</label>
+        <input type="email" 
+               class="input-field" 
+               placeholder="School Email" 
+               @bind="email" 
+               required />
+
+        <label style="color: #8B949E; font-size: 11px; font-weight: bold; text-transform: uppercase;">Security Key (Password)</label>
+        <input type="password" 
+               class="input-field" 
+               placeholder="Password" 
+               @bind="password" 
+               required />
+
+        <label style="color: #8B949E; font-size: 11px; font-weight: bold; text-transform: uppercase;">Confirm Security Key</label>
+        <input type="password" 
+               class="input-field" 
+               placeholder="Re-enter Password" 
+               @bind="confirmPassword" 
+               required />
+
+        <button type="button" class="neon-btn" style="margin-top: 10px;" @onclick="HandleRegister">
+            INITIALIZE CADET
+        </button>
+    </div>
+
+    <p style="font-size: 12px; margin-top: 20px; color: var(--text-gray);">
+        Already Enrolled? <a href="/login" style="color: var(--neon-teal); text-decoration: none;">Return to Log In</a>
+    </p>
+</div>
+
+@code {
+    private string name = "";
+    private string email = "";
+    private string password = "";
+    private string confirmPassword = "";
+    private string errorMessage = "";
+    private string successMessage = "";
+
+    private async Task HandleRegister()
+    {
+        errorMessage = "";
+        successMessage = "";
+
+        // Basic validations
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "All parameters are mandatory.";
+            return;
+        }
+
+        if (password != confirmPassword)
+        {
+            errorMessage = "Security keys do not match.";
+            return;
+        }
+
+        // Check for duplicate email
+        var exists = await Db.Users.AnyAsync(u => u.Email.ToLower() == email.Trim().ToLower());
+        if (exists)
+        {
+            errorMessage = "An agent with this email address already exists.";
+            return;
+        }
+
+        try
+        {
+            // 1. Create User
+            var newUser = new User
+            {
+                Name = name.Trim(),
+                Email = email.Trim().ToLower(),
+                Password = password,
+                Role = "STUDENT",
+                IsActive = 1
+            };
+
+            Db.Users.Add(newUser);
+            await Db.SaveChangesAsync();
+
+            // 2. Link Student Record
+            var newStudent = new Student
+            {
+                StudId = newUser.Uid,
+                Rank = "Novice"
+            };
+
+            Db.Students.Add(newStudent);
+            await Db.SaveChangesAsync();
+
+            successMessage = "Agent enrolled successfully. Redirecting to HUD...";
+            await Task.Delay(1500);
+            Nav.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Initialization failed: {ex.InnerException?.Message ?? ex.Message}";
+        }
+    }
+}

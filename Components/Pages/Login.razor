@@ -1,0 +1,99 @@
+@page "/"
+@page "/login"
+@using Microsoft.EntityFrameworkCore
+@using BitFlipBlazor.Data
+@using BitFlipBlazor.Models
+@using BitFlipBlazor.Services
+@inject AppDbContext Db
+@inject UserSession Session
+@inject NavigationManager Nav
+
+<PageTitle>Bit-Flip Login</PageTitle>
+
+<div class="login-container">
+    <img src="bitflip_logo.png" class="logo" alt="Bit-Flip Logo" style="max-width: 150px; margin-bottom: 20px;" />
+    <p style="color: var(--neon-teal); letter-spacing: 2px; font-weight: bold; margin-bottom: 20px;">LOG IN</p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p style="color: #ff4444; font-size: 13px; margin-bottom: 15px;">@errorMessage</p>
+    }
+
+    <div style="width: 300px;">
+        <input type="email" 
+               class="input-field" 
+               placeholder="Email (School Email)" 
+               @bind="email" 
+               disabled="@isProcessing" />
+
+        <input type="password" 
+               class="input-field" 
+               placeholder="Password" 
+               @bind="password" 
+               @onkeydown="HandleKeyDown"
+               disabled="@isProcessing" />
+
+        <button type="button" class="neon-btn" @onclick="HandleLogin" disabled="@isProcessing">
+            @(isProcessing ? "AUTHENTICATING..." : "Log In")
+        </button>
+    </div>
+
+    <p style="font-size: 12px; margin-top: 20px; color: var(--text-gray);">
+        Don't Have An Account? <a href="/register" style="color: var(--neon-teal); text-decoration: none;">Register</a>
+    </p>
+</div>
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string errorMessage = "";
+    private bool isProcessing = false;
+
+    private async Task HandleLogin()
+    {
+        if (isProcessing) return; // Prevent concurrent calls
+
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Invalid Email or Password";
+            return;
+        }
+
+        try
+        {
+            isProcessing = true;
+
+            var trimmedEmail = email.Trim().ToLower();
+            var user = await Db.Users
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == trimmedEmail && u.Password == password && u.IsActive == 1);
+
+            if (user != null)
+            {
+                Session.SetUser(user.Uid, user.Name, user.Role);
+                Nav.NavigateTo("/dashboard");
+            }
+            else
+            {
+                errorMessage = "Invalid Email or Password";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Login error: {ex.InnerException?.Message ?? ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleLogin();
+        }
+    }
+}
