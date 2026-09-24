@@ -655,7 +655,7 @@
     private List<MissionDto> missionsList = new();
     private List<BadgeDto> studentBadges = new();
     private List<RosterDto> sectionRoster = new();
-    private SectionDto? currentSection;
+    private UserSession.SectionState? currentSection;
     private int? lastLoadedSid;
     private string? lastSubView;
 
@@ -828,7 +828,7 @@
         {
             target.IsActive = activeStatus;
             await Db.SaveChangesAsync();
-            await LoadData();
+            await LoadAdminData();
         }
     }
 
@@ -875,7 +875,7 @@
         adminNewName = "";
         adminNewEmail = "";
         adminNewPass = "";
-        await LoadData();
+        await LoadAdminData();
     }
 
     private async Task CreateSection()
@@ -953,7 +953,7 @@
         }
 
         showAddMissionModal = false;
-        await LoadData();
+        await LoadAdminData();
     }
 
     private void TerminateSession()

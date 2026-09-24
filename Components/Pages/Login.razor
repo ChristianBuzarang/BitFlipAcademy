@@ -84,7 +84,7 @@
                 errorMessage = "Invalid Email or Password";
             }
             
-            Session.SetUser(user.Uid, user.Name, user.Email, user.Role);
+            Session.SetUser(user.Uid, user.Name ?? "", user.Email ?? "", user.Role ?? "");
             bool dataHandled = await Session.LoadInitialDataAsync(Db);
             if (!dataHandled)
             {
