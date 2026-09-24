@@ -1,5 +1,4 @@
 @page "/dashboard"
-@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using BitFlipBlazor.Data
 @using BitFlipBlazor.Models
@@ -8,92 +7,68 @@
 @inject UserSession Session
 @inject NavigationManager Nav
 
-<style>
-    /* Direct styles from dashboard.php */
-    .top-nav-tabs { display: flex; gap: 30px; border-bottom: 1px solid #30363d; margin-bottom: 30px; }
-    .nav-tab { background: transparent; border: none; padding: 15px 5px; color: #8B949E; font-weight: bold; font-size: 16px; border-bottom: 3px solid transparent; cursor: pointer; }
-    .nav-tab:hover { color: white; }
-    .nav-tab.active { color: var(--neon-teal); border-bottom-color: var(--neon-teal); }
-    
-    .sub-nav { display: flex; gap: 15px; margin-bottom: 25px; padding: 5px 0; }
-    .sub-tab { 
-        font-size: 12px; color: #8B949E; text-decoration: none; padding: 8px 20px; 
-        border-radius: 30px; border: 1px solid #30363d; transition: 0.3s;
-        font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
-    }
-    .sub-tab:hover { border-color: var(--neon-teal); color: white; }
-    .sub-tab.active { background: rgba(0, 229, 255, 0.1); color: var(--neon-teal); border-color: var(--neon-teal); }
-
-    .admin-card { background-color: var(--card-bg); border: 1px solid #30363d; border-radius: 12px; padding: 25px; }
-    .red-top { border-top: 3px solid #ef4444; }
-    .cyan-top { border-top: 3px solid var(--neon-teal); }
-    .blue-top { border-top: 3px solid #3b82f6; }
-    .orange-top { border-top: 3px solid #ffaa00; }
-    .status-tag { background: #441111; color: #ff4444; padding: 8px 20px; border-radius: 8px; border: 1px solid #ff4444; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-
-    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-    .class-card { background: var(--card-bg); border-radius: 15px; border: 1px solid #30363d; overflow: hidden; transition: 0.3s; cursor: pointer; }
-    .class-card:hover { transform: translateY(-5px); border-color: var(--neon-teal); }
-    .card-banner { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 50px; }
-    .mission-row { background: var(--card-bg); border-radius: 12px; padding: 20px; display: flex; align-items: center; margin-bottom: 15px; border-left: 6px solid #4ade80; }
-    .stat-circle { width: 65px; height: 65px; border: 4px solid #30363d; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; margin-left: 15px; text-align: center; }
-    .stat-circle b { font-size: 13px; color: white; }
-
-    .admin-table { width: 100%; border-collapse: collapse; text-align: left; color: white; }
-    .admin-table th { padding: 15px; color: #8B949E; font-size: 13px; text-transform: uppercase; background: #1c2128; }
-    .admin-table td { padding: 15px; border-top: 1px solid #30363d; }
-    .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-    .role-student { background: var(--neon-teal); color: black; }
-    .role-professor { background: #3b82f6; color: white; }
-    .role-admin { background: #ef4444; color: white; }
-    .control-btn { padding: 6px 15px; border-radius: 4px; text-decoration: none !important; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-block; }
-    .btn-green { background: #114411; color: #44ff44; border: 1px solid #44ff44; margin-right: 5px; }
-    .btn-red { background: #441111; color: #ff4444; border: 1px solid #ff4444; }
-
-    .modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; }
-</style>
-
-<div style="padding: 30px 60px; max-width: 1300px; margin: auto;">
+<div class="px-8 py-8 max-w-[1300px] mx-auto min-h-screen text-white bg-[#0D1117]">
     
     <!-- HEADER -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%;">
+    <div class="flex justify-between items-center mb-6 border-b border-[#30363d]/60 pb-5">
         <div>
-            <h1 style="margin:0; font-size: 24px;">SYSTEM: DASHBOARD</h1>
-            <p style="color: var(--text-gray); font-size: 14px;">
-                Agent: @Session.Name | <span class="badge role-@Session.Role.ToLower()">@Session.Role</span>
+            <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                SYSTEM: DASHBOARD
+            </h1>
+            <p class="text-[#8B949E] text-sm mt-1">
+                Agent: <span class="text-white font-medium">@Session.Name</span> | 
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase 
+                    @(Session.Role == "ADMIN" ? "bg-red-500/20 text-red-400 border border-red-500/40" : 
+                      Session.Role == "PROFESSOR" ? "bg-blue-500/20 text-blue-400 border border-blue-500/40" : 
+                      "bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40")">
+                    @Session.Role
+                </span>
             </p>
         </div>
-        <div class="header-right">
-            <button class="neon-btn btn-terminate" @onclick="TerminateSession">TERMINATE SESSION</button>
+        <div>
+            <button class="px-4 py-2 text-xs font-bold tracking-wider text-[#00E5FF] bg-transparent border border-[#00E5FF] rounded-lg transition-all duration-200 hover:bg-[#00E5FF] hover:text-black hover:shadow-[0_0_12px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer" 
+                    @onclick="TerminateSession">
+                TERMINATE SESSION
+            </button>
         </div>  
     </div>
 
     <!-- MAIN NAVIGATION TABS -->
-    <div class="top-nav-tabs">
+    <div class="flex gap-8 border-b border-[#30363d] mb-8">
         @if (Session.Role == "ADMIN")
         {
-            <button type="button" class="nav-tab @(CurrentView == "main" ? "active" : "")" 
+            <button type="button" 
+                    class="py-3 px-1 font-bold text-sm tracking-wide transition-all duration-200 border-b-2 cursor-pointer
+                           @(CurrentView == "main" ? "text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-transparent hover:text-white")" 
                     @onclick='() => Nav.NavigateTo("dashboard?view=main")'>
                 System Overview
             </button>
-            <button type="button" class="nav-tab @(CurrentView == "users" ? "active" : "")" 
+            <button type="button" 
+                    class="py-3 px-1 font-bold text-sm tracking-wide transition-all duration-200 border-b-2 cursor-pointer
+                           @(CurrentView == "users" ? "text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-transparent hover:text-white")" 
                     @onclick='() => Nav.NavigateTo("dashboard?view=users")'>
                 User Directory
             </button>
-            <button type="button" class="nav-tab @(CurrentView == "archive" ? "active" : "")" 
+            <button type="button" 
+                    class="py-3 px-1 font-bold text-sm tracking-wide transition-all duration-200 border-b-2 cursor-pointer
+                           @(CurrentView == "archive" ? "text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-transparent hover:text-white")" 
                     @onclick='() => Nav.NavigateTo("dashboard?view=archive")'>
                 User Archive
             </button>
         }
         else
         {
-            <button type="button" class="nav-tab @(CurrentView == "main" || CurrentView == "missions" ? "active" : "")"
+            <button type="button" 
+                    class="py-3 px-1 font-bold text-sm tracking-wide transition-all duration-200 border-b-2 cursor-pointer
+                           @(CurrentView == "main" || CurrentView == "missions" ? "text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-transparent hover:text-white")"
                     @onclick='() => Nav.NavigateTo("dashboard?view=main")'>
                 Classes
             </button>
             @if (Session.Role == "STUDENT")
             {
-                <button type="button" class="nav-tab @(CurrentView == "extra" ? "active" : "")" 
+                <button type="button" 
+                        class="py-3 px-1 font-bold text-sm tracking-wide transition-all duration-200 border-b-2 cursor-pointer
+                               @(CurrentView == "extra" ? "text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-transparent hover:text-white")" 
                         @onclick='() => Nav.NavigateTo("dashboard?view=extra")'>
                     Badges
                 </button>
@@ -101,290 +76,377 @@
         }
     </div>
 
-    <!-- ========================================================================= -->
-    <!--                               ADMIN VIEWS                                 -->
-    <!-- ========================================================================= -->
+    <!-- ADMIN VIEWS -->
     @if (Session.Role == "ADMIN")
     {
         @if (CurrentView == "main")
         {
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px;">
+            <div class="flex justify-between items-end mb-8">
                 <div>
-                    <h2 style="margin:0; color: white;">System Administration</h2>
-                    <p style="color: #ef4444; font-weight: bold; letter-spacing: 1px;">ROOT ACCESS: @Session.Name</p>
+                    <h2 class="text-xl font-bold text-white tracking-tight">System Administration</h2>
+                    <p class="text-red-400 text-xs font-mono font-bold tracking-wider mt-1">ROOT ACCESS: @Session.Name</p>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <div class="status-tag">SYSTEM STATUS: STABLE</div>
+                <div class="px-4 py-1.5 rounded-lg bg-red-950/40 border border-red-500 text-red-400 text-xs font-bold uppercase tracking-wider">
+                    SYSTEM STATUS: STABLE
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-                <div class="admin-card red-top">
-                    <p style="font-size: 11px; color: #8B949E; margin: 0;">TOTAL SYSTEM USERS</p>
-                    <h2 style="font-size: 40px; margin: 15px 0; color: white;">@totalUsers</h2>
-                    <p style="font-size: 11px; color: #8B949E;">Active Personnel</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-[#161B22] border border-[#30363d] border-t-4 border-t-red-500 rounded-xl p-6 shadow-lg">
+                    <p class="text-[11px] text-[#8B949E] font-bold tracking-wider uppercase">TOTAL SYSTEM USERS</p>
+                    <h2 class="text-4xl font-extrabold my-3 text-white">@totalUsers</h2>
+                    <p class="text-xs text-[#8B949E]">Active Personnel</p>
                 </div>
-                <div class="admin-card cyan-top">
-                    <p style="font-size: 11px; color: #8B949E; margin: 0;">ACTIVE STUDENTS</p>
-                    <h2 style="font-size: 40px; margin: 15px 0; color: white;">@totalStudents</h2>
-                    <p style="font-size: 11px; color: var(--neon-teal);">Live Players Only</p>
+                <div class="bg-[#161B22] border border-[#30363d] border-t-4 border-t-[#00E5FF] rounded-xl p-6 shadow-lg">
+                    <p class="text-[11px] text-[#8B949E] font-bold tracking-wider uppercase">ACTIVE STUDENTS</p>
+                    <h2 class="text-4xl font-extrabold my-3 text-white">@totalStudents</h2>
+                    <p class="text-xs text-[#00E5FF]">Live Players Only</p>
                 </div>
-                <div class="admin-card blue-top">
-                    <p style="font-size: 11px; color: #8B949E; margin: 0;">GLOBAL SUCCESS RATE</p>
-                    <h2 style="font-size: 40px; margin: 15px 0; color: white;">@globalSuccessRate%</h2>
-                    <p style="font-size: 11px; color: #8B949E;">Pass Rate Percentage</p>
+                <div class="bg-[#161B22] border border-[#30363d] border-t-4 border-t-blue-500 rounded-xl p-6 shadow-lg">
+                    <p class="text-[11px] text-[#8B949E] font-bold tracking-wider uppercase">GLOBAL SUCCESS RATE</p>
+                    <h2 class="text-4xl font-extrabold my-3 text-white">@globalSuccessRate%</h2>
+                    <p class="text-xs text-[#8B949E]">Pass Rate Percentage</p>
                 </div>
             </div>
         }
         else if (CurrentView == "users")
         {
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <p style="color: #8B949E; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin: 0;">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <p class="text-[#8B949E] text-xs font-bold tracking-widest uppercase">
                     AGENT DIRECTORY (Total: @FilteredUsers.Count())
                 </p>
-                <div style="display: flex; gap: 15px;">
-                    <button type="button" class="neon-btn btn-compact" @onclick="() => showAdminCreateModal = true">
+                <div class="flex gap-3 w-full sm:w-auto">
+                    <button type="button" 
+                            class="px-4 py-2 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-200 hover:bg-[#00f2ff] hover:shadow-[0_0_12px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer whitespace-nowrap" 
+                            @onclick="() => showAdminCreateModal = true">
                         + CREATE AGENT
                     </button>
-                    <input type="text" class="search-input" placeholder="SEARCH AGENTS..." @bind="searchTerm" @bind:event="oninput" />
+                    <input type="text" 
+                           class="bg-[#161B22]/90 border border-[#30363d] rounded-full px-4 py-1.5 text-xs text-white outline-none w-64 transition-all duration-300 focus:w-72 focus:border-[#00E5FF] focus:shadow-[0_0_10px_rgba(0,229,255,0.2)] placeholder:text-gray-500" 
+                           placeholder="SEARCH AGENTS..." 
+                           @bind="searchTerm" 
+                           @bind:event="oninput" />
                 </div>
             </div>
 
-            <div class="sub-nav">
+            <!-- Sub Filter Nav -->
+            <div class="flex gap-3 mb-6">
                 @foreach (var f in new[] { "ALL", "STUDENT", "PROFESSOR", "ADMIN" })
                 {
-                    <button type="button" class="sub-tab @(Filter == f ? "active" : "")"
+                    <button type="button" 
+                            class="text-xs font-bold uppercase tracking-wider px-5 py-2 rounded-full border transition-all duration-200 cursor-pointer
+                                   @(Filter == f 
+                                       ? "bg-[#00E5FF]/10 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_10px_rgba(0,229,255,0.2)]" 
+                                       : "text-[#8B949E] border-[#30363d] hover:border-[#00E5FF] hover:text-white")"
                             @onclick='() => Nav.NavigateTo($"dashboard?view=users&filter={f}")'>
                         @f
                     </button>
                 }
             </div>
 
-            <div class="admin-card" style="padding: 0; overflow: hidden;">
-                <table class="admin-table">
-                    <tr style="background: #1c2128;">
-                        <th>UID</th><th>Name</th><th>Email</th><th>Access</th><th style="text-align:center;">Control</th>
-                    </tr>
-                    @if (FilteredUsers.Any())
-                    {
-                        @foreach (var u in FilteredUsers)
-                        {
-                            <tr>
-                                <td style="color: #8B949E;">#@u.Uid</td>
-                                <td><b>@u.Name</b></td>
-                                <td style="color: #8B949E;">@u.Email</td>
-                                <td><span class="badge role-@u.Role.ToLower()">@u.Role</span></td>
-                                <td style="text-align: center;">
-                                    <button class="control-btn btn-red" @onclick="() => ToggleUserStatus(u.Uid, 0)">ARCHIVE</button>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr><td colspan="5" style="padding:40px; text-align:center; color:#8B949E;">No agents found.</td></tr>
-                    }
-                </table>
-            </div>
-        }
-        else if (CurrentView == "archive")
-        {
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <p style="color: #8B949E; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin: 0;">
-                    TERMINATED AGENT LOGS (Total: @archivedUsersList.Count)
-                </p>
-            </div>
-
-            <div class="admin-card orange-top" style="padding: 0; overflow: hidden;">
-                <table class="admin-table">
-                    <tr style="background: #1c2128;">
-                        <th>UID</th><th>Name</th><th>Email</th><th>Role</th><th style="text-align:center;">Control</th>
-                    </tr>
-                    @if (archivedUsersList.Any())
-                    {
-                        @foreach (var u in archivedUsersList)
-                        {
-                            <tr>
-                                <td style="color: #8B949E;">#@u.Uid</td>
-                                <td><b>@u.Name</b></td>
-                                <td style="color: #8B949E;">@u.Email</td>
-                                <td><span class="badge role-@u.Role.ToLower()">@u.Role</span></td>
-                                <td style="text-align: center;">
-                                    <button class="control-btn btn-green" @onclick="() => ToggleUserStatus(u.Uid, 1)">RESTORE</button>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr><td colspan="5" style="padding:40px; text-align:center; color:#8B949E;">No archived accounts found.</td></tr>
-                    }
-                </table>
-            </div>
-        }
-    }
-
-    <!-- ========================================================================= -->
-    <!--                      STUDENT & PROFESSOR VIEWS                            -->
-    <!-- ========================================================================= -->
-    @if (Session.Role != "ADMIN")
-    {
-        @if (CurrentView == "main" || string.IsNullOrEmpty(CurrentView))
-        {
-            <h3 style="color: #8B949E; margin-bottom: 25px;">Active Classes</h3>
-            <div class="grid-container">
-                @foreach (var sec in userSections)
-                {
-                    <div class="class-card" @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={sec.Sid}")'>
-                        <div class="card-banner" style="background:@(sec.Sid % 2 == 0 ? "#fce4ec" : "#e0f7fa");">👨‍💻</div>
-                        <div style="padding:20px;">
-                            <div style="font-weight:bold; font-size:18px;">@sec.SectionName</div>
-                            <div style="font-size:12px; color:#8B949E; margin-top:5px;">AY 25-26</div>
-                            <div style="font-size:11px; color:var(--neon-teal); margin-top:10px;">ID: #@sec.Sid | Code: @sec.SectionPassword</div>
-                        </div>
-                    </div>
-                }
-
-                <div class="class-card" style="border:2px dashed #30363d; display:flex; flex-direction:column; align-items:center; justify-content:center; height:230px;" 
-                     @onclick="() => showActionModal = true">
-                    <div style="font-size:30px; color:#8B949E;">+</div>
-                    <b style="color:#8B949E;">@(Session.Role == "PROFESSOR" ? "Create section" : "Join class")</b>
-                </div>
-            </div>
-        }
-        else if (CurrentView == "missions" && Sid.HasValue)
-        {
-            <div style="display:flex; align-items:center; margin-bottom: 25px;">
-                <button type="button" class="control-btn btn-red" style="width:auto; margin-right:20px; padding: 10px 20px;"
-                        @onclick='() => Nav.NavigateTo("dashboard?view=main")'>
-                    « BACK
-                </button>
-                <h2 style="margin:0;">@(currentSection?.SectionName ?? "Mission Hub")</h2>
-            </div>
-
-            <div class="sub-nav">
-                @if (Session.Role == "PROFESSOR")
-                {
-                    <button type="button" class="sub-tab @(SubView == "ongoing" ? "active" : "")"
-                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=ongoing")'>
-                        CHALLENGES
-                    </button>
-                    <button type="button" class="sub-tab @(SubView == "roster" ? "active" : "")"
-                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=roster")'>
-                        STUDENT ROSTER
-                    </button>                }
-                else
-                {
-                    <button type="button" class="sub-tab @(SubView == "ongoing" ? "active" : "")"
-                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=ongoing")'>
-                        ONGOING
-                    </button>
-                    <button type="button" class="sub-tab @(SubView == "completed" ? "active" : "")"
-                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=completed")'>
-                        COMPLETED
-                    </button>                }
-            </div>
-
-            @if (SubView == "ongoing" || SubView == "completed")
-            {
-                @if (Session.Role == "PROFESSOR" && SubView == "ongoing")
-                {
-                    <div style="text-align:right; margin-bottom:20px;">
-                        <button class="neon-btn btn-compact" @onclick="() => showAddMissionModal = true">+ CREATE MISSION</button>
-                    </div>
-                }
-
-                @if (!missionsList.Any())
-                {
-                    <div class="admin-card" style="text-align:center; padding: 40px; color: #8B949E;">No missions recorded.</div>
-                }
-                else
-                {
-                    @foreach (var m in missionsList)
-                    {
-                        <div class="mission-row">
-                            <div style="flex-grow:1;">
-                                <h3 style="margin:0;">@m.Category: @m.TargetNumber</h3>
-                                <p style="font-size:11px; color:@(SubView == "completed" ? "var(--neon-teal)" : "#4ade80"); font-weight:bold; margin-top:5px;">
-                                    @(SubView == "completed" ? "ARCHIVED" : "DEPLOYED")
-                                </p>
-                                <p style="font-size:12px; color:#8B949E; margin-top:10px;">⏱ Limit: @m.TimeLimit s | Difficulty: @m.DifficultyLevel</p>
-                            </div>
-
-                            @if (Session.Role == "STUDENT")
-                            {
-                                <div class="stat-circle">Overall Rank<b>@(SubView == "completed" ? m.DisplayRank : "N/A")</b></div>
-                                <div class="stat-circle" style="border-color:#4ade80;">Overall Score<b>@m.FinalScore/400</b></div>
-                                <div class="stat-circle">Time<b>@m.DisplayTime</b></div>
-
-                                @if (SubView == "ongoing")
-                                {
-                                  <button type="button" class="control-btn neon-btn btn-compact" style="margin-left:20px;"
-                                          @onclick='() => Nav.NavigateTo($"play?id={m.Cid}")'>
-                                      START
-                                  </button>
-                                }
-                                else
-                                {
-                                    <button class="control-btn neon-btn" style="width:auto; margin-left:20px; background: #30363d !important; color: #8B949E !important; cursor: default;" disabled>FINISHED</button>
-                                }
-                            }
-                        </div>
-                    }
-                }
-            }
-            else if (SubView == "roster" && Session.Role == "PROFESSOR")
-            {
-                <div class="admin-card" style="padding: 0; overflow: hidden;">
-                    <table class="admin-table">
-                        <tr style="background: #1c2128;">
-                            <th>Agent Name</th><th>Current Rank</th><th style="text-align:center;">Action</th>
+            <div class="bg-[#161B22] border border-[#30363d] rounded-xl overflow-hidden shadow-lg">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-[#1c2128] text-[#8B949E] text-xs uppercase tracking-wider">
+                        <tr>
+                            <th class="p-4">UID</th>
+                            <th class="p-4">Name</th>
+                            <th class="p-4">Email</th>
+                            <th class="p-4">Access</th>
+                            <th class="p-4 text-center">Control</th>
                         </tr>
-                        @if (sectionRoster.Any())
+                    </thead>
+                    <tbody class="divide-y divide-[#30363d] text-sm">
+                        @if (FilteredUsers.Any())
                         {
-                            @foreach (var r in sectionRoster)
+                            @foreach (var u in FilteredUsers)
                             {
-                                <tr>
-                                    <td>@r.Name</td>
-                                    <td><span class="badge role-student">@r.Rank</span></td>
-                                    <td style="text-align:center;">
-                                        <button type="button" class="control-btn btn-green"
-                                                @onclick='() => Nav.NavigateTo($"progress?studid={r.Uid}&sid={Sid}")'>
-                                            VIEW LOGS
-                                        </button>                                    
+                                <tr class="hover:bg-[#1c2128]/50 transition-colors">
+                                    <td class="p-4 text-[#8B949E] font-mono">#@u.Uid</td>
+                                    <td class="p-4 font-semibold text-white">@u.Name</td>
+                                    <td class="p-4 text-[#8B949E]">@u.Email</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase 
+                                            @(u.Role == "ADMIN" ? "bg-red-500/20 text-red-400" : 
+                                              u.Role == "PROFESSOR" ? "bg-blue-500/20 text-blue-400" : 
+                                              "bg-[#00E5FF]/20 text-[#00E5FF]")">
+                                            @u.Role
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <button class="px-3.5 py-1 text-xs font-bold rounded bg-red-950 text-red-400 border border-red-500 hover:bg-red-900 transition-all active:scale-95 cursor-pointer" 
+                                                @onclick="() => ToggleUserStatus(u.Uid, 0)">
+                                            ARCHIVE
+                                        </button>
                                     </td>
                                 </tr>
                             }
                         }
                         else
                         {
-                            <tr><td colspan="3" style="padding:40px; text-align:center; color:#8B949E;">No agents currently enrolled in this section.</td></tr>
+                            <tr>
+                                <td colspan="5" class="p-10 text-center text-[#8B949E]">No agents found matching criteria.</td>
+                            </tr>
                         }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (CurrentView == "archive")
+        {
+            <div class="mb-4">
+                <p class="text-[#8B949E] text-xs font-bold tracking-widest uppercase">
+                    TERMINATED AGENT LOGS (Total: @archivedUsersList.Count)
+                </p>
+            </div>
+
+            <div class="bg-[#161B22] border border-[#30363d] border-t-4 border-t-amber-500 rounded-xl overflow-hidden shadow-lg">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-[#1c2128] text-[#8B949E] text-xs uppercase tracking-wider">
+                        <tr>
+                            <th class="p-4">UID</th>
+                            <th class="p-4">Name</th>
+                            <th class="p-4">Email</th>
+                            <th class="p-4">Role</th>
+                            <th class="p-4 text-center">Control</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#30363d] text-sm">
+                        @if (archivedUsersList.Any())
+                        {
+                            @foreach (var u in archivedUsersList)
+                            {
+                                <tr class="hover:bg-[#1c2128]/50 transition-colors">
+                                    <td class="p-4 text-[#8B949E] font-mono">#@u.Uid</td>
+                                    <td class="p-4 font-semibold text-white">@u.Name</td>
+                                    <td class="p-4 text-[#8B949E]">@u.Email</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-800 text-gray-400">@u.Role</span>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <button class="px-3.5 py-1 text-xs font-bold rounded bg-emerald-950 text-emerald-400 border border-emerald-500 hover:bg-emerald-900 transition-all active:scale-95 cursor-pointer" 
+                                                @onclick="() => ToggleUserStatus(u.Uid, 1)">
+                                            RESTORE
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="p-10 text-center text-[#8B949E]">No archived accounts found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+    <!-- STUDENT & PROFESSOR VIEWS -->
+    @if (Session.Role != "ADMIN")
+    {
+        @if (CurrentView == "main" || string.IsNullOrEmpty(CurrentView))
+        {
+            <h3 class="text-[#8B949E] font-bold text-sm tracking-wider uppercase mb-6">Active Classes</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                @foreach (var sec in userSections)
+                {
+                    <div class="bg-[#161B22] border border-[#30363d] rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:border-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.2)] group" 
+                         @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={sec.Sid}")'>
+                        <div class="h-28 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-300" 
+                             style="background:@(sec.Sid % 2 == 0 ? "#fce4ec" : "#e0f7fa");">
+                            👨‍💻
+                        </div>
+                        <div class="p-5">
+                            <div class="font-bold text-base text-white truncate">@sec.SectionName</div>
+                            <div class="text-xs text-[#8B949E] mt-1">Academic Year 2025–2026</div>
+                            <div class="text-[11px] text-[#00E5FF] font-mono mt-3">ID: #@sec.Sid | Code: @sec.SectionPassword</div>
+                        </div>
+                    </div>
+                }
+
+                <div class="bg-[#161B22]/40 border-2 border-dashed border-[#30363d] rounded-xl flex flex-col items-center justify-center h-[216px] cursor-pointer transition-all duration-300 hover:border-[#00E5FF] hover:bg-[#161B22] group" 
+                     @onclick="() => showActionModal = true">
+                    <div class="text-3xl text-[#8B949E] group-hover:text-[#00E5FF] group-hover:scale-125 transition-all mb-2">+</div>
+                    <b class="text-[#8B949E] text-xs font-bold uppercase tracking-wider group-hover:text-white transition-colors">
+                        @(Session.Role == "PROFESSOR" ? "Create section" : "Join class")
+                    </b>
+                </div>
+            </div>
+        }
+        else if (CurrentView == "missions" && Sid.HasValue)
+        {
+            <div class="flex items-center gap-4 mb-6">
+                <button type="button" 
+                        class="px-4 py-2 bg-red-950 text-red-400 border border-red-500 text-xs font-bold rounded-lg transition-all hover:bg-red-900 active:scale-95 cursor-pointer"
+                        @onclick='() => Nav.NavigateTo("dashboard?view=main")'>
+                    « BACK
+                </button>
+                <h2 class="text-xl font-bold text-white tracking-tight">@(currentSection?.SectionName ?? "Mission Hub")</h2>
+            </div>
+
+            <!-- Sub Nav -->
+            <div class="flex gap-3 mb-6">
+                @if (Session.Role == "PROFESSOR")
+                {
+                    <button type="button" 
+                            class="text-xs font-bold uppercase tracking-wider px-5 py-2 rounded-full border transition-all duration-200 cursor-pointer
+                                   @(SubView == "ongoing" ? "bg-[#00E5FF]/10 text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-[#30363d] hover:border-[#00E5FF] hover:text-white")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=ongoing")'>
+                        CHALLENGES
+                    </button>
+                    <button type="button" 
+                            class="text-xs font-bold uppercase tracking-wider px-5 py-2 rounded-full border transition-all duration-200 cursor-pointer
+                                   @(SubView == "roster" ? "bg-[#00E5FF]/10 text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-[#30363d] hover:border-[#00E5FF] hover:text-white")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=roster")'>
+                        STUDENT ROSTER
+                    </button>
+                }
+                else
+                {
+                    <button type="button" 
+                            class="text-xs font-bold uppercase tracking-wider px-5 py-2 rounded-full border transition-all duration-200 cursor-pointer
+                                   @(SubView == "ongoing" ? "bg-[#00E5FF]/10 text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-[#30363d] hover:border-[#00E5FF] hover:text-white")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=ongoing")'>
+                        ONGOING
+                    </button>
+                    <button type="button" 
+                            class="text-xs font-bold uppercase tracking-wider px-5 py-2 rounded-full border transition-all duration-200 cursor-pointer
+                                   @(SubView == "completed" ? "bg-[#00E5FF]/10 text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-[#30363d] hover:border-[#00E5FF] hover:text-white")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=completed")'>
+                        COMPLETED
+                    </button>
+                }
+            </div>
+
+            @if (SubView == "ongoing" || SubView == "completed")
+            {
+                @if (Session.Role == "PROFESSOR" && SubView == "ongoing")
+                {
+                    <div class="text-right mb-4">
+                        <button class="px-5 py-2.5 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer" 
+                                @onclick="() => showAddMissionModal = true">
+                            + CREATE MISSION
+                        </button>
+                    </div>
+                }
+
+                @if (!missionsList.Any())
+                {
+                    <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-10 text-center text-[#8B949E]">
+                        No missions recorded in this section.
+                    </div>
+                }
+                else
+                {
+                    <div class="flex flex-col gap-4">
+                        @foreach (var m in missionsList)
+                        {
+                            <div class="bg-[#161B22] border border-[#30363d] border-l-4 border-l-emerald-400 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md transition-all hover:border-[#00E5FF]/50">
+                                <div class="flex-grow">
+                                    <h3 class="text-base font-bold text-white tracking-tight">@m.Category: @m.TargetNumber</h3>
+                                    <p class="text-[11px] font-bold mt-1 tracking-wider uppercase @(SubView == "completed" ? "text-[#00E5FF]" : "text-emerald-400")">
+                                        @(SubView == "completed" ? "ARCHIVED" : "DEPLOYED")
+                                    </p>
+                                    <p class="text-xs text-[#8B949E] mt-2 font-mono">⏱ Limit: @m.TimeLimit s | Difficulty: @m.DifficultyLevel</p>
+                                </div>
+
+                                @if (Session.Role == "STUDENT")
+                                {
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-16 h-16 rounded-full border-2 border-[#30363d] flex flex-col items-center justify-center text-center text-[9px] text-[#8B949E]">
+                                            RANK<b class="text-xs text-white">@(SubView == "completed" ? m.DisplayRank : "N/A")</b>
+                                        </div>
+                                        <div class="w-16 h-16 rounded-full border-2 border-emerald-400 flex flex-col items-center justify-center text-center text-[9px] text-[#8B949E]">
+                                            SCORE<b class="text-xs text-white">@m.FinalScore/400</b>
+                                        </div>
+                                        <div class="w-16 h-16 rounded-full border-2 border-[#30363d] flex flex-col items-center justify-center text-center text-[9px] text-[#8B949E]">
+                                            TIME<b class="text-xs text-white font-mono">@m.DisplayTime</b>
+                                        </div>
+
+                                        @if (SubView == "ongoing")
+                                        {
+                                            <button type="button" 
+                                                    class="ml-3 px-5 py-2.5 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer"
+                                                    @onclick='() => Nav.NavigateTo($"play?id={m.Cid}")'>
+                                                START
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="ml-3 px-5 py-2.5 bg-gray-800 text-gray-500 font-bold uppercase tracking-wider text-xs rounded-lg cursor-not-allowed" disabled>
+                                                FINISHED
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else if (SubView == "roster" && Session.Role == "PROFESSOR")
+            {
+                <div class="bg-[#161B22] border border-[#30363d] rounded-xl overflow-hidden shadow-lg">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-[#1c2128] text-[#8B949E] text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="p-4">Agent Name</th>
+                                <th class="p-4">Current Rank</th>
+                                <th class="p-4 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#30363d] text-sm">
+                            @if (sectionRoster.Any())
+                            {
+                                @foreach (var r in sectionRoster)
+                                {
+                                    <tr class="hover:bg-[#1c2128]/50 transition-colors">
+                                        <td class="p-4 font-semibold text-white">@r.Name</td>
+                                        <td class="p-4">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/30">@r.Rank</span>
+                                        </td>
+                                        <td class="p-4 text-center">
+                                            <button type="button" 
+                                                    class="px-3.5 py-1 text-xs font-bold rounded bg-emerald-950 text-emerald-400 border border-emerald-500 hover:bg-emerald-900 transition-all active:scale-95 cursor-pointer"
+                                                    @onclick='() => Nav.NavigateTo($"progress?studid={r.Uid}&sid={Sid}")'>
+                                                VIEW LOGS
+                                            </button>                                    
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="3" class="p-10 text-center text-[#8B949E]">No agents currently enrolled in this section.</td></tr>
+                            }
+                        </tbody>
                     </table>
                 </div>
             }
         }
         else if (CurrentView == "extra" && Session.Role == "STUDENT")
         {
-            <h2 style="margin-bottom:30px;">Badge Achievement Vault</h2>
-            <div class="grid-container">
+            <h2 class="text-xl font-bold text-white tracking-tight mb-6">Badge Achievement Vault</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 @if (studentBadges.Any())
                 {
                     @foreach (var b in studentBadges)
                     {
-                        <div class="class-card" style="text-align: center; padding: 20px;">
-                            <div class="card-banner" style="background: rgba(0, 229, 255, 0.1); border-radius: 10px; margin-bottom: 15px;">
-                                <span style="font-size: 50px;">🏅</span>
+                        <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-5 text-center transition-all hover:border-[#00E5FF] hover:-translate-y-1">
+                            <div class="h-24 bg-[#00E5FF]/10 rounded-lg flex items-center justify-center text-4xl mb-4">
+                                🏅
                             </div>
-                            <h3 style="margin: 10px 0 5px 0; color: var(--neon-teal);">@b.Name</h3>
-                            <p style="font-size: 12px; color: #8B949E;">@b.Criteria</p>
+                            <h3 class="font-bold text-base text-[#00E5FF] mb-1">@b.Name</h3>
+                            <p class="text-xs text-[#8B949E]">@b.Criteria</p>
                         </div>
                     }
                 }
                 else
                 {
-                    <div class="cyber-card" style="grid-column: 1 / -1; text-align: center; padding: 60px;">
-                        <p style="color: #8B949E;">No achievements detected yet.</p>
+                    <div class="col-span-full bg-[#161B22] border border-[#30363d] rounded-xl p-12 text-center text-[#8B949E]">
+                        No achievements detected yet.
                     </div>
                 }
             </div>
@@ -396,33 +458,45 @@
 <!-- MODAL: ADMIN CREATE USER -->
 @if (showAdminCreateModal)
 {
-    <div class="modal">
-        <div class="cyber-card" style="width:450px; padding:40px; position:relative;">
-            <span style="position:absolute; right:20px; top:20px; cursor:pointer; color: white;" @onclick="() => showAdminCreateModal = false">✖</span>
-            <h2 style="color: var(--neon-teal); margin-top: 0; text-transform: uppercase;">PROVISION NEW AGENT</h2>
+    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl w-full max-w-md p-8 relative shadow-2xl">
+            <button class="absolute top-5 right-5 text-gray-400 hover:text-white cursor-pointer text-lg" @onclick="() => showAdminCreateModal = false">✖</button>
+            <h2 class="text-[#00E5FF] text-base font-bold uppercase tracking-wider mb-5">PROVISION NEW AGENT</h2>
 
-            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">NAME</label>
-            <input type="text" class="input-field" placeholder="Full Name" @bind="adminNewName" />
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">NAME</label>
+                    <input type="text" class="w-full bg-[#f0ece2] text-black px-3.5 py-2 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" placeholder="Full Name" @bind="adminNewName" />
+                </div>
 
-            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">EMAIL</label>
-            <input type="email" class="input-field" placeholder="Email Address" @bind="adminNewEmail" />
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">EMAIL</label>
+                    <input type="email" class="w-full bg-[#f0ece2] text-black px-3.5 py-2 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" placeholder="Email Address" @bind="adminNewEmail" />
+                </div>
 
-            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">CLEARANCE LEVEL (ROLE)</label>
-            <select class="input-field" @bind="adminNewRole">
-                <option value="STUDENT">STUDENT</option>
-                <option value="PROFESSOR">PROFESSOR</option>
-                <option value="ADMIN">ADMIN</option>
-            </select>
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">CLEARANCE LEVEL (ROLE)</label>
+                    <select class="w-full bg-[#f0ece2] text-black px-3.5 py-2 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" @bind="adminNewRole">
+                        <option value="STUDENT">STUDENT</option>
+                        <option value="PROFESSOR">PROFESSOR</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                </div>
 
-            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">PASSWORD</label>
-            <input type="password" class="input-field" placeholder="Initial Security Key" @bind="adminNewPass" />
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">PASSWORD</label>
+                    <input type="password" class="w-full bg-[#f0ece2] text-black px-3.5 py-2 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" placeholder="Initial Security Key" @bind="adminNewPass" />
+                </div>
 
-            @if (!string.IsNullOrEmpty(adminModalError))
-            {
-                <p style="color:#ff4444; font-size:12px; margin-top:10px;">@adminModalError</p>
-            }
+                @if (!string.IsNullOrEmpty(adminModalError))
+                {
+                    <p class="text-red-400 text-xs mt-1">@adminModalError</p>
+                }
 
-            <button class="neon-btn" style="margin-top: 20px;" @onclick="AdminCreateUser">INITIALIZE IN DATABASE</button>
+                <button class="w-full mt-3 py-3 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer" @onclick="AdminCreateUser">
+                    INITIALIZE IN DATABASE
+                </button>
+            </div>
         </div>
     </div>
 }
@@ -430,29 +504,37 @@
 <!-- MODAL: CREATE / JOIN CLASS -->
 @if (showActionModal)
 {
-    <div class="modal">
-        <div class="cyber-card" style="width:450px; padding:40px; position:relative;">
-            <span style="position:absolute; right:20px; top:20px; cursor:pointer; color: white;" @onclick="() => showActionModal = false">✖</span>
+    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl w-full max-w-md p-8 relative shadow-2xl">
+            <button class="absolute top-5 right-5 text-gray-400 hover:text-white cursor-pointer text-lg" @onclick="() => showActionModal = false">✖</button>
             
             @if (Session.Role == "PROFESSOR")
             {
-                <h2 style="margin-top:0;">Initialize Section</h2>
-                <input type="text" class="input-field" placeholder="Section Name" @bind="newSectionName" />
-                <input type="text" class="input-field" placeholder="Create Class Code" @bind="newSectionPass" />
-                <div style="text-align:right;">
-                    <button class="neon-btn" style="width:auto; padding:12px 40px; border-radius:10px;" @onclick="CreateSection">Create Class</button>
+                <h2 class="text-lg font-bold text-white mb-4">Initialize Section</h2>
+                <div class="flex flex-col gap-3">
+                    <input type="text" class="w-full bg-[#f0ece2] text-black px-3.5 py-2.5 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" placeholder="Section Name" @bind="newSectionName" />
+                    <input type="text" class="w-full bg-[#f0ece2] text-black px-3.5 py-2.5 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" placeholder="Create Class Code" @bind="newSectionPass" />
+                    <div class="text-right mt-2">
+                        <button class="px-6 py-2.5 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer" @onclick="CreateSection">
+                            Create Class
+                        </button>
+                    </div>
                 </div>
             }
             else
             {
-                <h1>Enter class code.</h1>
-                <input type="text" class="input-field" placeholder="Class Code" style="background:transparent; border-bottom:2px solid #30363d; border-radius:0; color:white; font-size:18px;" @bind="joinCode" />
-                @if (!string.IsNullOrEmpty(modalError))
-                {
-                    <p style="color:#ff4444; font-size:12px; margin-top:10px;">@modalError</p>
-                }
-                <div style="text-align:right; margin-top:30px;">
-                    <button class="neon-btn" style="width:auto; padding:12px 40px; border-radius:30px;" @onclick="JoinSection">Join class</button>
+                <h2 class="text-lg font-bold text-white mb-4">Enter class code.</h2>
+                <div class="flex flex-col gap-3">
+                    <input type="text" class="w-full bg-transparent border-b-2 border-[#30363d] px-2 py-3 text-white text-lg outline-none focus:border-[#00E5FF] transition-colors" placeholder="Class Code" @bind="joinCode" />
+                    @if (!string.IsNullOrEmpty(modalError))
+                    {
+                        <p class="text-red-400 text-xs">@modalError</p>
+                    }
+                    <div class="text-right mt-4">
+                        <button class="px-8 py-2.5 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-full transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer" @onclick="JoinSection">
+                            Join class
+                        </button>
+                    </div>
                 </div>
             }
         </div>
@@ -462,31 +544,43 @@
 <!-- MODAL: CREATE MISSION (PROFESSOR) -->
 @if (showAddMissionModal)
 {
-    <div class="modal">
-        <div class="cyber-card" style="width:450px; padding:40px; position:relative;">
-            <span style="position:absolute; right:20px; top:20px; cursor:pointer; color: white;" @onclick="() => showAddMissionModal = false">✖</span>
-            <h2 style="color: var(--neon-teal); margin-top: 0; text-transform: uppercase;">New Mission Parameters</h2>
+    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl w-full max-w-md p-8 relative shadow-2xl">
+            <button class="absolute top-5 right-5 text-gray-400 hover:text-white cursor-pointer text-lg" @onclick="() => showAddMissionModal = false">✖</button>
+            <h2 class="text-[#00E5FF] text-base font-bold uppercase tracking-wider mb-5">New Mission Parameters</h2>
 
-            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">CATEGORY</label>
-            <select class="input-field" @bind="newMissionCategory">
-                <option value="Binary">Binary Numeration</option>
-                <option value="Logic">Boolean Logic Gates</option>
-            </select>
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">CATEGORY</label>
+                    <select class="w-full bg-[#f0ece2] text-black px-3.5 py-2 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" @bind="newMissionCategory">
+                        <option value="Binary">Binary Numeration</option>
+                        <option value="Logic">Boolean Logic Gates</option>
+                    </select>
+                </div>
 
-            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">TARGET DECIMAL</label>
-            <input type="number" class="input-field" @bind="newMissionTarget" />
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">TARGET DECIMAL</label>
+                    <input type="number" class="w-full bg-[#f0ece2] text-black px-3.5 py-2 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" @bind="newMissionTarget" />
+                </div>
 
-            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">TIME LIMIT (SECONDS)</label>
-            <input type="number" class="input-field" @bind="newMissionTime" />
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">TIME LIMIT (SECONDS)</label>
+                    <input type="number" class="w-full bg-[#f0ece2] text-black px-3.5 py-2 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" @bind="newMissionTime" />
+                </div>
 
-            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">DIFFICULTY</label>
-            <select class="input-field" @bind="newMissionDiff">
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-            </select>
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">DIFFICULTY</label>
+                    <select class="w-full bg-[#f0ece2] text-black px-3.5 py-2 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF]" @bind="newMissionDiff">
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+                </div>
 
-            <button class="neon-btn" @onclick="CreateMission">DEPLOY TO ACADEMY</button>
+                <button class="w-full mt-3 py-3 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer" @onclick="CreateMission">
+                    DEPLOY TO ACADEMY
+                </button>
+            </div>
         </div>
     </div>
 }
@@ -523,7 +617,6 @@
     private string adminNewPass = "";
     private string adminModalError = "";
 
-    // View models
     public class SectionDto
     {
         public int Sid { get; set; }
@@ -602,7 +695,6 @@
         }
         else
         {
-            // Fetch Sections
             userSections.Clear();
             using (var cmd = Db.Database.GetDbConnection().CreateCommand())
             {
@@ -630,7 +722,6 @@
                 }
             }
 
-            // Drill down: Section Missions / Roster
             if (Sid.HasValue)
             {
                 currentSection = userSections.FirstOrDefault(s => s.Sid == Sid.Value);
@@ -703,7 +794,6 @@
                 }
             }
 
-            // Badges
             if (CurrentView == "extra" && Session.Role == "STUDENT")
             {
                 studentBadges.Clear();
@@ -745,50 +835,50 @@
     }
 
     private async Task AdminCreateUser()
-{
-      adminModalError = "";
-      if (string.IsNullOrWhiteSpace(adminNewName) || string.IsNullOrWhiteSpace(adminNewEmail) || string.IsNullOrWhiteSpace(adminNewPass))
-      {
-          adminModalError = "All parameters are mandatory.";
-          return;
-      }
+    {
+        adminModalError = "";
+        if (string.IsNullOrWhiteSpace(adminNewName) || string.IsNullOrWhiteSpace(adminNewEmail) || string.IsNullOrWhiteSpace(adminNewPass))
+        {
+            adminModalError = "All parameters are mandatory.";
+            return;
+        }
 
-      var exists = await Db.Users.AnyAsync(u => u.Email.ToLower() == adminNewEmail.Trim().ToLower());
-      if (exists)
-      {
-          adminModalError = "An agent with this email already exists.";
-          return;
-      }
+        var exists = await Db.Users.AnyAsync(u => u.Email.ToLower() == adminNewEmail.Trim().ToLower());
+        if (exists)
+        {
+            adminModalError = "An agent with this email already exists.";
+            return;
+        }
 
-      var newUser = new User
-      {
-          Name = adminNewName.Trim(),
-          Email = adminNewEmail.Trim().ToLower(),
-          Password = adminNewPass,
-          Role = adminNewRole,
-          IsActive = 1
-      };
+        var newUser = new User
+        {
+            Name = adminNewName.Trim(),
+            Email = adminNewEmail.Trim().ToLower(),
+            Password = adminNewPass,
+            Role = adminNewRole,
+            IsActive = 1
+        };
 
-      Db.Users.Add(newUser);
-      await Db.SaveChangesAsync();
+        Db.Users.Add(newUser);
+        await Db.SaveChangesAsync();
 
-      if (adminNewRole == "STUDENT")
-      {
-          var newStudent = new Student
-          {
-              StudId = newUser.Uid,
-              Rank = "Novice"
-          };
-          Db.Students.Add(newStudent);
-          await Db.SaveChangesAsync();
-      }
+        if (adminNewRole == "STUDENT")
+        {
+            var newStudent = new Student
+            {
+                StudId = newUser.Uid,
+                Rank = "Novice"
+            };
+            Db.Students.Add(newStudent);
+            await Db.SaveChangesAsync();
+        }
 
-      showAdminCreateModal = false;
-      adminNewName = "";
-      adminNewEmail = "";
-      adminNewPass = "";
-      await LoadData();
-  }
+        showAdminCreateModal = false;
+        adminNewName = "";
+        adminNewEmail = "";
+        adminNewPass = "";
+        await LoadData();
+    }
 
     private async Task CreateSection()
     {
