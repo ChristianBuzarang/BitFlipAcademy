@@ -1,5 +1,4 @@
 @page "/progress"
-@rendermode InteractiveServer
 @using BitFlipBlazor.Data
 @using BitFlipBlazor.Models
 @using BitFlipBlazor.Services
@@ -10,16 +9,18 @@
 
 <PageTitle>Cadet Progress Dossier | Bit-Flip Academy</PageTitle>
 
-<div style="padding: 30px 60px; max-width: 1200px; margin: auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #30363d; padding-bottom: 20px;">
+<div class="px-8 py-8 max-w-[1200px] mx-auto min-h-screen text-white bg-[#0D1117]">
+    <div class="flex justify-between items-center mb-8 border-b border-[#30363d] pb-5">
         <div>
-            <h1 style="margin: 0; font-size: 24px;">DOSSIER: @studentName.ToUpper()</h1>
-            <p style="color: var(--text-gray); font-size: 13px; margin-top: 5px;">
-                RANK: <span class="badge role-student">@studentRank</span> | SECTION ID: #@SectionId
+            <h1 class="text-2xl font-bold tracking-tight uppercase">DOSSIER: @studentName</h1>
+            <p class="text-[#8B949E] text-xs font-mono mt-1">
+                RANK: <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/30">@studentRank</span> | SECTION ID: #@SectionId
             </p>
         </div>
         <div>
-            <button type="button" class="control-btn btn-red" style="padding: 10px 20px;" @onclick="ReturnToDashboard">
+            <button type="button" 
+                    class="px-5 py-2.5 bg-red-950 text-red-400 border border-red-500 text-xs font-bold rounded-lg transition-all hover:bg-red-900 active:scale-95 cursor-pointer" 
+                    @onclick="ReturnToDashboard">
                 « RETURN TO HUD
             </button>
         </div>
@@ -27,62 +28,62 @@
 
     @if (isLoading)
     {
-        <div class="cyber-card" style="text-align: center; padding: 40px; color: #8B949E;">
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl text-center p-12 text-[#8B949E] font-mono animate-pulse">
             RETRIEVING AGENT LOGS...
         </div>
     }
     else
     {
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
-            <div class="admin-card cyan-top">
-                <p style="font-size: 11px; color: #8B949E; margin: 0;">TOTAL MISSIONS ATTEMPTED</p>
-                <h2 style="font-size: 36px; margin: 10px 0; color: white;">@historyLogs.Count</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-[#161B22] border border-[#30363d] border-t-4 border-t-[#00E5FF] rounded-xl p-6 shadow-lg">
+                <p class="text-[11px] text-[#8B949E] font-bold tracking-wider uppercase">TOTAL MISSIONS ATTEMPTED</p>
+                <h2 class="text-3xl font-extrabold my-2 text-white">@historyLogs.Count</h2>
             </div>
-            <div class="admin-card blue-top">
-                <p style="font-size: 11px; color: #8B949E; margin: 0;">SUCCESSFUL DEPLOYMENTS</p>
-                <h2 style="font-size: 36px; margin: 10px 0; color: #4ade80;">@historyLogs.Count(l => l.IsPassed == 1)</h2>
+            <div class="bg-[#161B22] border border-[#30363d] border-t-4 border-t-blue-500 rounded-xl p-6 shadow-lg">
+                <p class="text-[11px] text-[#8B949E] font-bold tracking-wider uppercase">SUCCESSFUL DEPLOYMENTS</p>
+                <h2 class="text-3xl font-extrabold my-2 text-emerald-400">@historyLogs.Count(l => l.IsPassed == 1)</h2>
             </div>
-            <div class="admin-card red-top">
-                <p style="font-size: 11px; color: #8B949E; margin: 0;">AVERAGE SCORE</p>
-                <h2 style="font-size: 36px; margin: 10px 0; color: var(--neon-teal);">
+            <div class="bg-[#161B22] border border-[#30363d] border-t-4 border-t-red-500 rounded-xl p-6 shadow-lg">
+                <p class="text-[11px] text-[#8B949E] font-bold tracking-wider uppercase">AVERAGE SCORE</p>
+                <h2 class="text-3xl font-extrabold my-2 text-[#00E5FF]">
                     @(historyLogs.Any() ? (int)historyLogs.Average(l => l.FinalScore) : 0) / 400
                 </h2>
             </div>
         </div>
 
-        <div class="admin-card" style="padding: 0; overflow: hidden;">
-            <table class="admin-table">
-                <thead>
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl overflow-hidden shadow-lg">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-[#1c2128] text-[#8B949E] text-xs uppercase tracking-wider">
                     <tr>
-                        <th>Mission ID</th>
-                        <th>Category</th>
-                        <th>Target</th>
-                        <th>Score</th>
-                        <th>Time</th>
-                        <th>Timestamp</th>
-                        <th>Status</th>
+                        <th class="p-4">Mission ID</th>
+                        <th class="p-4">Category</th>
+                        <th class="p-4">Target</th>
+                        <th class="p-4">Score</th>
+                        <th class="p-4">Time</th>
+                        <th class="p-4">Timestamp</th>
+                        <th class="p-4">Status</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-[#30363d] text-sm">
                     @if (historyLogs.Any())
                     {
                         @foreach (var log in historyLogs)
                         {
-                            <tr>
-                                <td style="color: #8B949E;">#@log.Cid</td>
-                                <td><b>@log.Category</b></td>
-                                <td style="font-family: monospace; color: var(--neon-teal);">@log.TargetNumber</td>
-                                <td><b>@log.FinalScore</b> / 400</td>
-                                <td>@log.TimeTaken s</td>
-                                <td style="color: #8B949E; font-size: 12px;">@log.DateCompleted.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td>
+                            <tr class="hover:bg-[#1c2128]/50 transition-colors">
+                                <td class="p-4 text-[#8B949E] font-mono">#@log.Cid</td>
+                                <td class="p-4 font-semibold text-white">@log.Category</td>
+                                <td class="p-4 font-mono text-[#00E5FF]">@log.TargetNumber</td>
+                                <td class="p-4 font-bold text-white">@log.FinalScore / 400</td>
+                                <td class="p-4 text-gray-300 font-mono">@log.TimeTaken s</td>
+                                <td class="p-4 text-[#8B949E] text-xs font-mono">@log.DateCompleted.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="p-4">
                                     @if (log.IsPassed == 1)
                                     {
-                                        <span class="badge" style="background: #114411; color: #44ff44; border: 1px solid #44ff44;">PASSED</span>
+                                        <span class="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-950 text-emerald-400 border border-emerald-500">PASSED</span>
                                     }
                                     else
                                     {
-                                        <span class="badge" style="background: #441111; color: #ff4444; border: 1px solid #ff4444;">FAILED</span>
+                                        <span class="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-red-950 text-red-400 border border-red-500">FAILED</span>
                                     }
                                 </td>
                             </tr>
@@ -91,7 +92,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px; color: #8B949E;">
+                            <td colspan="7" class="p-10 text-center text-[#8B949E]">
                                 No simulation data logged for this cadet.
                             </td>
                         </tr>
@@ -142,14 +143,12 @@
             return;
         }
 
-        // Fetch User and Rank info
         var user = await Db.Users.FirstOrDefaultAsync(u => u.Uid == StudentId.Value);
         var student = await Db.Students.FirstOrDefaultAsync(s => s.StudId == StudentId.Value);
         
         if (user != null) studentName = user.Name;
         if (student != null) studentRank = student.Rank;
 
-        // Fetch score history using raw connection to join across tables
         historyLogs.Clear();
         using (var cmd = Db.Database.GetDbConnection().CreateCommand())
         {
