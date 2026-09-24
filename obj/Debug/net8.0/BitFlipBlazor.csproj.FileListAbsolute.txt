@@ -90,3 +90,5 @@ C:/Users/L23Y16W08/Downloads/AppDev_Project1/BitFlipBlazor/obj/Debug/net8.0/ref/
 /home/jannyjaze/Project_Collections/BitFlipAcademy/obj/Debug/net8.0/ref/BitFlipBlazor.dll
 /home/jannyjaze/Project_Collections/BitFlipAcademy/bin/Debug/net8.0/Npgsql.dll
 /home/jannyjaze/Project_Collections/BitFlipAcademy/bin/Debug/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll
+/home/jannyjaze/Project_Collections/BitFlipAcademy/bin/Debug/net8.0/package-lock.json
+/home/jannyjaze/Project_Collections/BitFlipAcademy/bin/Debug/net8.0/package.json

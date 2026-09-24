@@ -1,0 +1,26 @@
+{
+  "name": "bitflipacademy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch:css": "npx @tailwindcss/cli -i ./Styles/input.css -o ./wwwroot/css/tailwind.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChristianBuzarang/BitFlipAcademy.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ChristianBuzarang/BitFlipAcademy/issues"
+  },
+  "homepage": "https://github.com/ChristianBuzarang/BitFlipAcademy#readme",
+  "devDependencies": {
+    "tailwindcss": "^4.3.3"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.3"
+  }
+}
