@@ -79,15 +79,20 @@
             var user = await Db.Users
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == trimmedEmail && u.Password == password && u.IsActive == 1);
 
-            if (user != null)
-            {
-                Session.SetUser(user.Uid, user.Name, user.Role);
-                Nav.NavigateTo("/dashboard");
-            }
-            else
-            {
+            if (user == null)
+            {                
                 errorMessage = "Invalid Email or Password";
             }
+            
+            Session.SetUser(user.Uid, user.Name, user.Email, user.Role);
+            bool dataHandled = await Session.LoadInitialDataAsync(Db);
+            if (!dataHandled)
+            {
+                Session.Clear();
+                errorMessage = "System failed to retrieve agent records from database. Contact admin.";
+                return;
+            }
+            Nav.NavigateTo("/dashboard");
         }
         catch (Exception ex)
         {
