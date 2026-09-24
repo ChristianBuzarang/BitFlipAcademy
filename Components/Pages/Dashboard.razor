@@ -250,7 +250,7 @@
         {
             <h3 class="text-[#8B949E] font-bold text-sm tracking-wider uppercase mb-6">Active Classes</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                @foreach (var sec in userSections)
+                @foreach (var sec in Session.Sections)
                 {
                     <div class="bg-[#161B22] border border-[#30363d] rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:border-[#00E5FF] hover:shadow-[0_0_15px_rgba(0,229,255,0.2)] group" 
                          @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={sec.Sid}")'>
@@ -656,6 +656,8 @@
     private List<BadgeDto> studentBadges = new();
     private List<RosterDto> sectionRoster = new();
     private SectionDto? currentSection;
+    private int? lastLoadedSid;
+    private string? lastSubView;
 
     protected override void OnParametersSet()
     {
@@ -666,7 +668,7 @@
 
     protected override void OnInitialized()
     {
-        if (!Session.IsAuthenticated)
+        if (!Session.IsAuthenticated || !Session.IsDataLoaded)
         {
             Nav.NavigateTo("/login", replace: true);
         }
@@ -674,147 +676,143 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        if (Session.IsAuthenticated)
-        {
-            await LoadData();
-        }
-    }
+        if (!Session.IsAuthenticated) return;
 
-    private async Task LoadData()
-    {
         if (Session.Role == "ADMIN")
         {
-            usersList = await Db.Users.Where(u => u.IsActive == 1).ToListAsync();
-            archivedUsersList = await Db.Users.Where(u => u.IsActive == 0).ToListAsync();
-            totalUsers = usersList.Count;
-            totalStudents = usersList.Count(u => u.Role == "STUDENT");
-
-            var totalRecords = await Db.ScoreRecords.CountAsync();
-            var passedRecords = await Db.ScoreRecords.CountAsync(r => r.IsPassed == 1);
-            globalSuccessRate = totalRecords > 0 ? (int)Math.Round(((double)passedRecords / totalRecords) * 100) : 0;
+            if (usersList.Count == 0 || CurrentView == "users" || CurrentView == "archive")
+            {
+                await LoadAdminData();
+            }
+            return;
         }
-        else
+
+        if (Sid.HasValue && (lastLoadedSid != Sid.Value || lastSubView != SubView))
         {
-            userSections.Clear();
+            lastLoadedSid = Sid.Value;
+            lastSubView = SubView;
+            await LoadSectionDetails();
+        }
+        else if (CurrentView == "extra" && studentBadges.Count == 0)
+        {
+            await LoadBadges();
+        }    }
+
+    private async Task LoadAdminData()
+    {
+        usersList = await Db.Users.Where(u => u.IsActive == 1).ToListAsync();
+        archivedUsersList = await Db.Users.Where(u => u.IsActive == 0).ToListAsync();
+        totalUsers = usersList.Count;
+        totalStudents = usersList.Count(u => u.Role == "STUDENT");
+
+        var totalRecords = await Db.ScoreRecords.CountAsync();
+        var passedRecords = await Db.ScoreRecords.CountAsync(r => r.IsPassed == 1);
+        globalSuccessRate = totalRecords > 0 ? (int)Math.Round(((double)passedRecords / totalRecords) * 100) : 0;
+    }
+
+    private async Task LoadSectionDetails()
+    {
+        if (!Sid.HasValue) return;
+
+        currentSection = Session.Sections.FirstOrDefault(s => s.Sid == Sid.Value);
+
+        if (SubView == "ongoing" || SubView == "completed")
+        {
+            var tempMissions = new List<MissionDto>();
             using (var cmd = Db.Database.GetDbConnection().CreateCommand())
             {
                 await Db.Database.OpenConnectionAsync();
                 if (Session.Role == "PROFESSOR")
                 {
-                    cmd.CommandText = $"SELECT s.sid, s.section_name, s.section_password FROM tblsection s JOIN tblsection_professor sp ON s.sid = sp.sid WHERE sp.pid = {Session.Uid}";
+                    cmd.CommandText = "SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid WHERE cs.sid = @sid ORDER BY c.cid DESC;";
+                }
+                else if (SubView == "ongoing")
+                {
+                    cmd.CommandText = "SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid WHERE cs.sid = @sid AND c.cid NOT IN (SELECT cr.cid FROM tblchallenge_record cr JOIN tblstudent_record sr ON cr.srid = sr.srid WHERE sr.studid = @uid) ORDER BY c.cid DESC;";
                 }
                 else
                 {
-                    cmd.CommandText = $"SELECT s.sid, s.section_name, s.section_password FROM tblsection s JOIN tblsection_student ss ON s.sid = ss.sid WHERE ss.studid = {Session.Uid}";
+                    cmd.CommandText = "SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level, r.final_score, r.time_taken FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid JOIN tblchallenge_record cr ON c.cid = cr.cid JOIN tblstudent_record sr ON cr.srid = sr.srid JOIN tblscorerecord r ON sr.srid = r.srid WHERE cs.sid = @sid AND sr.studid = @uid ORDER BY r.date_completed DESC;";
                 }
+
+                var pSid = cmd.CreateParameter(); pSid.ParameterName = "@sid"; pSid.Value = Sid.Value; cmd.Parameters.Add(pSid);
+                var pUid = cmd.CreateParameter(); pUid.ParameterName = "@uid"; pUid.Value = Session.Uid; cmd.Parameters.Add(pUid);
 
                 using (var reader = await cmd.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
                     {
-                        userSections.Add(new SectionDto
+                        var m = new MissionDto
                         {
-                            Sid = reader.GetInt32(0),
-                            SectionName = reader.GetString(1),
-                            SectionPassword = reader.GetString(2)
+                            Cid = reader.GetInt32(0),
+                            Category = reader.GetString(1),
+                            TargetNumber = reader.GetInt32(2),
+                            TimeLimit = reader.GetInt32(3),
+                            DifficultyLevel = reader.GetString(4)
+                        };
+
+                        if (SubView == "completed")
+                        {
+                            m.FinalScore = reader.GetInt32(5);
+                            int seconds = reader.GetInt32(6);
+                            m.DisplayTime = $"{(seconds / 60):D2}:{(seconds % 60):D2}";
+                            m.DisplayRank = m.FinalScore >= 350 ? "S" : (m.FinalScore >= 200 ? "A" : "B");
+                        }
+
+                        tempMissions.Add(m);
+                    }
+                }
+            }
+            missionsList = tempMissions;
+        }
+        else if (SubView == "roster" && Session.Role == "PROFESSOR")
+        {
+            var tempRoster = new List<RosterDto>();
+            using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+            {
+                await Db.Database.OpenConnectionAsync();
+                cmd.CommandText = "SELECT u.uid, u.name, s.rank FROM tbluser u JOIN tblstudent s ON u.uid = s.studid JOIN tblsection_student ss ON s.studid = ss.studid WHERE ss.sid = @sid AND u.is_active = 1;";
+                var pSid = cmd.CreateParameter(); pSid.ParameterName = "@sid"; pSid.Value = Sid.Value; cmd.Parameters.Add(pSid);
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        tempRoster.Add(new RosterDto
+                        {
+                            Uid = reader.GetInt32(0),
+                            Name = reader.GetString(1),
+                            Rank = reader.IsDBNull(2) ? "Novice" : reader.GetString(2)
                         });
                     }
                 }
             }
+            sectionRoster = tempRoster;
+        }
+    }
 
-            if (Sid.HasValue)
+    private async Task LoadBadges()
+    {
+        var tempBadges = new List<BadgeDto>();
+        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+        {
+            await Db.Database.OpenConnectionAsync();
+            cmd.CommandText = "SELECT b.badgename, b.criteriaMet FROM tblbadge b JOIN tblstudent_badge sb ON b.bid = sb.bid WHERE sb.studid = @uid;";
+            var pUid = cmd.CreateParameter(); pUid.ParameterName = "@uid"; pUid.Value = Session.Uid; cmd.Parameters.Add(pUid);
+
+            using (var reader = await cmd.ExecuteReaderAsync())
             {
-                currentSection = userSections.FirstOrDefault(s => s.Sid == Sid.Value);
-
-                if (SubView == "ongoing" || SubView == "completed")
+                while (await reader.ReadAsync())
                 {
-                    missionsList.Clear();
-                    using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+                    tempBadges.Add(new BadgeDto
                     {
-                        await Db.Database.OpenConnectionAsync();
-                        if (Session.Role == "PROFESSOR")
-                        {
-                            cmd.CommandText = $"SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid WHERE cs.sid = {Sid.Value} ORDER BY c.cid DESC";
-                        }
-                        else if (SubView == "ongoing")
-                        {
-                            cmd.CommandText = $"SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid WHERE cs.sid = {Sid.Value} AND c.cid NOT IN (SELECT cr.cid FROM tblchallenge_record cr JOIN tblstudent_record sr ON cr.srid = sr.srid WHERE sr.studid = {Session.Uid}) ORDER BY c.cid DESC";
-                        }
-                        else
-                        {
-                            cmd.CommandText = $"SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level, r.final_score, r.time_taken FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid JOIN tblchallenge_record cr ON c.cid = cr.cid JOIN tblstudent_record sr ON cr.srid = sr.srid JOIN tblscorerecord r ON sr.srid = r.srid WHERE cs.sid = {Sid.Value} AND sr.studid = {Session.Uid} ORDER BY r.date_completed DESC";
-                        }
-
-                        using (var reader = await cmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                var m = new MissionDto
-                                {
-                                    Cid = reader.GetInt32(0),
-                                    Category = reader.GetString(1),
-                                    TargetNumber = reader.GetInt32(2),
-                                    TimeLimit = reader.GetInt32(3),
-                                    DifficultyLevel = reader.GetString(4)
-                                };
-
-                                if (SubView == "completed")
-                                {
-                                    m.FinalScore = reader.GetInt32(5);
-                                    int seconds = reader.GetInt32(6);
-                                    m.DisplayTime = $"{(seconds / 60):D2}:{(seconds % 60):D2}";
-                                    m.DisplayRank = m.FinalScore >= 350 ? "S" : (m.FinalScore >= 200 ? "A" : "B");
-                                }
-
-                                missionsList.Add(m);
-                            }
-                        }
-                    }
-                }
-                else if (SubView == "roster" && Session.Role == "PROFESSOR")
-                {
-                    sectionRoster.Clear();
-                    using (var cmd = Db.Database.GetDbConnection().CreateCommand())
-                    {
-                        await Db.Database.OpenConnectionAsync();
-                        cmd.CommandText = $"SELECT u.uid, u.name, s.rank FROM tbluser u JOIN tblstudent s ON u.uid = s.studid JOIN tblsection_student ss ON s.studid = ss.studid WHERE ss.sid = {Sid.Value} AND u.is_active = 1";
-                        using (var reader = await cmd.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                sectionRoster.Add(new RosterDto
-                                {
-                                    Uid = reader.GetInt32(0),
-                                    Name = reader.GetString(1),
-                                    Rank = reader.IsDBNull(2) ? "Novice" : reader.GetString(2)
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (CurrentView == "extra" && Session.Role == "STUDENT")
-            {
-                studentBadges.Clear();
-                using (var cmd = Db.Database.GetDbConnection().CreateCommand())
-                {
-                    await Db.Database.OpenConnectionAsync();
-                    cmd.CommandText = $"SELECT b.badgename, b.criteriaMet FROM tblbadge b JOIN tblstudent_badge sb ON b.bid = sb.bid WHERE sb.studid = {Session.Uid}";
-                    using (var reader = await cmd.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            studentBadges.Add(new BadgeDto
-                            {
-                                Name = reader.GetString(0),
-                                Criteria = reader.GetString(1)
-                            });
-                        }
-                    }
+                        Name = reader.GetString(0),
+                        Criteria = reader.GetString(1)
+                    });
                 }
             }
         }
+        studentBadges = tempBadges;
     }
 
     private IEnumerable<User> FilteredUsers => usersList.Where(u =>
@@ -905,7 +903,7 @@
         showActionModal = false;
         newSectionName = "";
         newSectionPass = "";
-        await LoadData();
+        await Session.RefreshSectionsAsync(Db); // Updates in-memory session
     }
 
     private async Task JoinSection()
@@ -931,7 +929,7 @@
 
                 showActionModal = false;
                 joinCode = "";
-                await LoadData();
+                await Session.RefreshSectionsAsync(Db); // Updates in-memory session
             }
             else
             {
