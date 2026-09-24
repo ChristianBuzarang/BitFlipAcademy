@@ -11,151 +11,70 @@
 
 <PageTitle>Simulation Chamber | Bit-Flip Academy</PageTitle>
 
-<style>
-    .game-hud {
-        max-width: 900px;
-        margin: 40px auto;
-        padding: 30px;
-    }
-    .hud-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #30363d;
-        padding-bottom: 20px;
-        margin-bottom: 30px;
-    }
-    .target-box {
-        text-align: center;
-        background: rgba(0, 229, 255, 0.05);
-        border: 2px solid var(--neon-teal);
-        border-radius: 12px;
-        padding: 25px;
-        margin-bottom: 35px;
-        box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
-    }
-    .target-val {
-        font-size: 64px;
-        font-weight: 900;
-        color: var(--neon-teal);
-        font-family: monospace;
-        letter-spacing: 4px;
-        margin: 10px 0;
-    }
-    .bit-row {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-bottom: 35px;
-        flex-wrap: wrap;
-    }
-    .bit-slot {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 85px;
-    }
-    .bit-weight {
-        font-size: 13px;
-        color: #8B949E;
-        font-family: monospace;
-        margin-bottom: 8px;
-    }
-    .bit-toggle {
-        width: 80px;
-        height: 100px;
-        background: #161B22;
-        border: 2px solid #30363d;
-        border-radius: 10px;
-        color: #8B949E;
-        font-size: 36px;
-        font-weight: bold;
-        font-family: monospace;
-        cursor: pointer;
-        transition: 0.2s all ease-in-out;
-    }
-    .bit-toggle.active {
-        background: rgba(0, 229, 255, 0.15);
-        border-color: var(--neon-teal);
-        color: var(--neon-teal);
-        box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
-        transform: translateY(-4px);
-    }
-    .live-sum-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #1c2128;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 15px 25px;
-        margin-bottom: 30px;
-        font-size: 18px;
-    }
-    .timer-badge {
-        font-family: monospace;
-        font-size: 20px;
-        font-weight: bold;
-        padding: 6px 16px;
-        border-radius: 6px;
-        border: 1px solid #30363d;
-    }
-</style>
-
-<div class="game-hud">
+<div class="max-w-[900px] mx-auto my-10 p-8 bg-[#0D1117] text-white">
     <!-- TOP STATUS -->
-    <div class="hud-header">
+    <div class="flex justify-between items-center border-b border-[#30363d] pb-5 mb-8">
         <div>
-            <h2 style="margin: 0; font-size: 22px;">MISSION SIMULATION</h2>
-            <p style="color: #8B949E; font-size: 12px; margin-top: 5px;">
+            <h2 class="text-xl font-bold tracking-tight text-white uppercase">MISSION SIMULATION</h2>
+            <p class="text-[#8B949E] text-xs mt-1 font-mono">
                 OPERATIVE: @Session.Name | CATEGORY: @(challenge?.Category ?? "UNKNOWN")
             </p>
         </div>
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <div class="timer-badge @(timeLeft <= 10 ? "text-danger border-danger" : "text-light")" 
-                 style="color: @(timeLeft <= 10 ? "#ef4444" : "#4ade80"); border-color: @(timeLeft <= 10 ? "#ef4444" : "#30363d");">
+        <div class="flex items-center gap-4">
+            <div class="font-mono text-xl font-bold px-4 py-1.5 rounded-lg border 
+                        @(timeLeft <= 10 ? "text-red-400 border-red-500 animate-pulse bg-red-950/20" : "text-emerald-400 border-[#30363d] bg-[#161B22]")">
                 ⏱ @(timeLeft)s
             </div>
-            <button type="button" class="control-btn btn-red" @onclick="AbortMission">ABORT</button>
+            <button type="button" 
+                    class="px-4 py-2 bg-red-950 text-red-400 border border-red-500 text-xs font-bold rounded-lg transition-all hover:bg-red-900 active:scale-95 cursor-pointer" 
+                    @onclick="AbortMission">
+                ABORT
+            </button>
         </div>
     </div>
 
     @if (isLoading)
     {
-        <div class="cyber-card" style="text-align: center; padding: 60px;">
-            <p style="color: #8B949E;">INITIALIZING QUANTUM REGISTERS...</p>
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl text-center p-14 shadow-lg">
+            <p class="text-[#8B949E] text-sm tracking-wider font-mono animate-pulse">INITIALIZING QUANTUM REGISTERS...</p>
         </div>
     }
     else if (challenge == null)
     {
-        <div class="cyber-card" style="text-align: center; padding: 50px;">
-            <p style="color: #ef4444;">MISSION DATA CORRUPTED OR NOT FOUND.</p>
-            <button type="button" class="neon-btn btn-compact" @onclick="AbortMission">RETURN TO HUD</button>
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl text-center p-12 shadow-lg">
+            <p class="text-red-400 font-bold mb-4">MISSION DATA CORRUPTED OR NOT FOUND.</p>
+            <button type="button" 
+                    class="px-5 py-2.5 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all hover:bg-[#00f2ff] cursor-pointer" 
+                    @onclick="AbortMission">
+                RETURN TO HUD
+            </button>
         </div>
     }
     else if (isFinished)
     {
         <!-- RESULT SCREEN -->
-        <div class="cyber-card" style="text-align: center; padding: 50px;">
-            <h1 style="color: @(isPassed ? "var(--neon-teal)" : "#ef4444"); margin-top: 0;">
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl text-center p-12 shadow-2xl">
+            <h1 class="text-3xl font-extrabold tracking-tight mb-2 @(isPassed ? "text-[#00E5FF]" : "text-red-500")">
                 @(isPassed ? "MISSION ACCOMPLISHED" : "OPERATION FAILED")
             </h1>
-            <p style="color: #8B949E; margin-bottom: 25px;">
+            <p class="text-[#8B949E] text-sm mb-8">
                 @(isPassed ? "Target binary configuration matched successfully." : "Time expired or incorrect register states.")
             </p>
 
-            <div style="display: flex; justify-content: center; gap: 25px; margin-bottom: 35px;">
-                <div class="stat-circle" style="width: 90px; height: 90px; border-color: var(--neon-teal);">
-                    <span style="font-size: 10px;">FINAL SCORE</span>
-                    <b style="font-size: 20px; color: var(--neon-teal);">@finalScore / 400</b>
+            <div class="flex justify-center gap-6 mb-8">
+                <div class="w-24 h-24 rounded-full border-2 border-[#00E5FF] flex flex-col items-center justify-center bg-[#00E5FF]/10 shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+                    <span class="text-[10px] text-[#8B949E] font-bold">SCORE</span>
+                    <b class="text-xl text-[#00E5FF]">@finalScore / 400</b>
                 </div>
-                <div class="stat-circle" style="width: 90px; height: 90px;">
-                    <span style="font-size: 10px;">TIME TAKEN</span>
-                    <b style="font-size: 20px;">@(timeTaken)s</b>
+                <div class="w-24 h-24 rounded-full border-2 border-[#30363d] flex flex-col items-center justify-center bg-[#1c2128]">
+                    <span class="text-[10px] text-[#8B949E] font-bold">TIME</span>
+                    <b class="text-xl text-white font-mono">@(timeTaken)s</b>
                 </div>
             </div>
 
-            <button type="button" class="neon-btn" style="width: 250px;" @onclick="AbortMission">
+            <button type="button" 
+                    class="w-64 py-3 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer" 
+                    @onclick="AbortMission">
                 BACK TO DASHBOARD
             </button>
         </div>
@@ -163,21 +82,26 @@
     else
     {
         <!-- ACTIVE GAMEPLAY -->
-        <div class="target-box">
-            <span style="color: #8B949E; font-size: 12px; letter-spacing: 2px;">TARGET DECIMAL</span>
-            <div class="target-val">@challenge.TargetNumber</div>
-            <span class="badge role-student">@challenge.DifficultyLevel</span>
+        <div class="text-center bg-[#00E5FF]/5 border-2 border-[#00E5FF] rounded-xl p-6 mb-8 shadow-[0_0_20px_rgba(0,229,255,0.15)]">
+            <span class="text-[#8B949E] text-xs font-bold tracking-widest uppercase">TARGET DECIMAL</span>
+            <div class="text-6xl font-black font-mono tracking-widest text-[#00E5FF] my-2">@challenge.TargetNumber</div>
+            <span class="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40">
+                @challenge.DifficultyLevel
+            </span>
         </div>
 
-        <div class="bit-row">
+        <div class="flex justify-center gap-3 mb-8 flex-wrap">
             @for (int i = 0; i < 8; i++)
             {
                 var bitIndex = i;
-                var weight = 1 << (7 - bitIndex); // 128, 64, 32, 16, 8, 4, 2, 1
-                <div class="bit-slot">
-                    <span class="bit-weight">@weight</span>
+                var weight = 1 << (7 - bitIndex);
+                <div class="flex flex-col items-center w-20">
+                    <span class="text-xs text-[#8B949E] font-mono mb-2">@weight</span>
                     <button type="button" 
-                            class="bit-toggle @(bits[bitIndex] ? "active" : "")" 
+                            class="w-20 h-24 font-mono font-bold text-3xl rounded-xl border-2 transition-all duration-200 ease-in-out cursor-pointer active:scale-90
+                                   @(bits[bitIndex] 
+                                       ? "bg-[#00E5FF]/20 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.3)] -translate-y-1" 
+                                       : "bg-[#161B22] text-[#8B949E] border-[#30363d] hover:border-gray-500")" 
                             @onclick="() => ToggleBit(bitIndex)">
                         @(bits[bitIndex] ? "1" : "0")
                     </button>
@@ -185,14 +109,13 @@
             }
         </div>
 
-        <div class="live-sum-bar">
-            <span>CURRENT SUM: <b style="color: @(currentSum == challenge.TargetNumber ? "#4ade80" : "white");">@currentSum</b></span>
-            <span>BINARY: <code style="color: var(--neon-teal);">@CurrentBinaryString</code></span>
+        <div class="flex justify-between items-center bg-[#1c2128] border border-[#30363d] rounded-lg px-6 py-4 mb-8 text-base">
+            <span class="font-mono">CURRENT SUM: <b class="@(currentSum == challenge.TargetNumber ? "text-emerald-400" : "text-white")">@currentSum</b></span>
+            <span class="font-mono text-sm text-[#8B949E]">BINARY: <code class="text-[#00E5FF] font-bold">@CurrentBinaryString</code></span>
         </div>
 
         <button type="button" 
-                class="neon-btn" 
-                style="padding: 16px;" 
+                class="w-full py-4 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-sm rounded-lg transition-all duration-300 ease-out hover:bg-[#00f2ff] hover:shadow-[0_0_20px_rgba(0,229,255,0.5)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer" 
                 @onclick="SubmitRegisters">
             SUBMIT CONFIGURATION
         </button>
@@ -284,7 +207,6 @@
 
         if (passed && challenge != null)
         {
-            // Calculate score out of 400: Base 200 + Time Bonus 200
             double timeRatio = (double)timeLeft / challenge.TimeLimit;
             finalScore = 200 + (int)Math.Round(timeRatio * 200);
         }
