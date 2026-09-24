@@ -1,0 +1,203 @@
+@page "/progress"
+@rendermode InteractiveServer
+@using BitFlipBlazor.Data
+@using BitFlipBlazor.Models
+@using BitFlipBlazor.Services
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext Db
+@inject UserSession Session
+@inject NavigationManager Nav
+
+<PageTitle>Cadet Progress Dossier | Bit-Flip Academy</PageTitle>
+
+<div style="padding: 30px 60px; max-width: 1200px; margin: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #30363d; padding-bottom: 20px;">
+        <div>
+            <h1 style="margin: 0; font-size: 24px;">DOSSIER: @studentName.ToUpper()</h1>
+            <p style="color: var(--text-gray); font-size: 13px; margin-top: 5px;">
+                RANK: <span class="badge role-student">@studentRank</span> | SECTION ID: #@SectionId
+            </p>
+        </div>
+        <div>
+            <button type="button" class="control-btn btn-red" style="padding: 10px 20px;" @onclick="ReturnToDashboard">
+                « RETURN TO HUD
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="cyber-card" style="text-align: center; padding: 40px; color: #8B949E;">
+            RETRIEVING AGENT LOGS...
+        </div>
+    }
+    else
+    {
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div class="admin-card cyan-top">
+                <p style="font-size: 11px; color: #8B949E; margin: 0;">TOTAL MISSIONS ATTEMPTED</p>
+                <h2 style="font-size: 36px; margin: 10px 0; color: white;">@historyLogs.Count</h2>
+            </div>
+            <div class="admin-card blue-top">
+                <p style="font-size: 11px; color: #8B949E; margin: 0;">SUCCESSFUL DEPLOYMENTS</p>
+                <h2 style="font-size: 36px; margin: 10px 0; color: #4ade80;">@historyLogs.Count(l => l.IsPassed == 1)</h2>
+            </div>
+            <div class="admin-card red-top">
+                <p style="font-size: 11px; color: #8B949E; margin: 0;">AVERAGE SCORE</p>
+                <h2 style="font-size: 36px; margin: 10px 0; color: var(--neon-teal);">
+                    @(historyLogs.Any() ? (int)historyLogs.Average(l => l.FinalScore) : 0) / 400
+                </h2>
+            </div>
+        </div>
+
+        <div class="admin-card" style="padding: 0; overflow: hidden;">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Mission ID</th>
+                        <th>Category</th>
+                        <th>Target</th>
+                        <th>Score</th>
+                        <th>Time</th>
+                        <th>Timestamp</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (historyLogs.Any())
+                    {
+                        @foreach (var log in historyLogs)
+                        {
+                            <tr>
+                                <td style="color: #8B949E;">#@log.Cid</td>
+                                <td><b>@log.Category</b></td>
+                                <td style="font-family: monospace; color: var(--neon-teal);">@log.TargetNumber</td>
+                                <td><b>@log.FinalScore</b> / 400</td>
+                                <td>@log.TimeTaken s</td>
+                                <td style="color: #8B949E; font-size: 12px;">@log.DateCompleted.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>
+                                    @if (log.IsPassed == 1)
+                                    {
+                                        <span class="badge" style="background: #114411; color: #44ff44; border: 1px solid #44ff44;">PASSED</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge" style="background: #441111; color: #ff4444; border: 1px solid #ff4444;">FAILED</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: #8B949E;">
+                                No simulation data logged for this cadet.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "studid")]
+    public int? StudentId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "sid")]
+    public int? SectionId { get; set; }
+
+    private string studentName = "Cadet";
+    private string studentRank = "Novice";
+    private bool isLoading = true;
+
+    private class ProgressLogDto
+    {
+        public int Cid { get; set; }
+        public string Category { get; set; } = "";
+        public int TargetNumber { get; set; }
+        public int FinalScore { get; set; }
+        public int TimeTaken { get; set; }
+        public DateTime DateCompleted { get; set; }
+        public int IsPassed { get; set; }
+    }
+
+    private List<ProgressLogDto> historyLogs = new();
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!StudentId.HasValue)
+        {
+            isLoading = false;
+            return;
+        }
+
+        // Fetch User and Rank info
+        var user = await Db.Users.FirstOrDefaultAsync(u => u.Uid == StudentId.Value);
+        var student = await Db.Students.FirstOrDefaultAsync(s => s.StudId == StudentId.Value);
+        
+        if (user != null) studentName = user.Name;
+        if (student != null) studentRank = student.Rank;
+
+        // Fetch score history using raw connection to join across tables
+        historyLogs.Clear();
+        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+        {
+            await Db.Database.OpenConnectionAsync();
+            cmd.CommandText = @"
+                SELECT c.cid, c.category, c.target_number, r.final_score, r.time_taken, r.date_completed, r.is_passed
+                FROM tblscorerecord r
+                JOIN tblstudent_record sr ON r.srid = sr.srid
+                JOIN tblchallenge_record cr ON r.srid = cr.srid
+                JOIN tblchallenge c ON cr.cid = c.cid
+                WHERE sr.studid = @studid
+                ORDER BY r.date_completed DESC;";
+
+            var pStud = cmd.CreateParameter();
+            pStud.ParameterName = "@studid";
+            pStud.Value = StudentId.Value;
+            cmd.Parameters.Add(pStud);
+
+            using (var reader = await cmd.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    historyLogs.Add(new ProgressLogDto
+                    {
+                        Cid = reader.GetInt32(0),
+                        Category = reader.GetString(1),
+                        TargetNumber = reader.GetInt32(2),
+                        FinalScore = reader.GetInt32(3),
+                        TimeTaken = reader.GetInt32(4),
+                        DateCompleted = reader.GetDateTime(5),
+                        IsPassed = reader.GetInt32(6)
+                    });
+                }
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private void ReturnToDashboard()
+    {
+        if (SectionId.HasValue)
+        {
+            Nav.NavigateTo($"dashboard?view=missions&sid={SectionId.Value}&sub=roster");
+        }
+        else
+        {
+            Nav.NavigateTo("dashboard?view=main");
+        }
+    }
+}

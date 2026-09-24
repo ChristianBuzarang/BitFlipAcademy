@@ -1,32 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\L23Y16W08\\Downloads\\AppDev_Project1\\BitFlipBlazor\\BitFlipBlazor.csproj": {}
+    "/home/jannyjaze/Project_Collections/BitFlipAcademy/BitFlipBlazor.csproj": {}
   },
   "projects": {
-    "C:\\Users\\L23Y16W08\\Downloads\\AppDev_Project1\\BitFlipBlazor\\BitFlipBlazor.csproj": {
+    "/home/jannyjaze/Project_Collections/BitFlipAcademy/BitFlipBlazor.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\L23Y16W08\\Downloads\\AppDev_Project1\\BitFlipBlazor\\BitFlipBlazor.csproj",
+        "projectUniqueName": "/home/jannyjaze/Project_Collections/BitFlipAcademy/BitFlipBlazor.csproj",
         "projectName": "BitFlipBlazor",
-        "projectPath": "C:\\Users\\L23Y16W08\\Downloads\\AppDev_Project1\\BitFlipBlazor\\BitFlipBlazor.csproj",
-        "packagesPath": "C:\\Users\\L23Y16W08\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\L23Y16W08\\Downloads\\AppDev_Project1\\BitFlipBlazor\\obj\\",
+        "projectPath": "/home/jannyjaze/Project_Collections/BitFlipAcademy/BitFlipBlazor.csproj",
+        "packagesPath": "/home/jannyjaze/.nuget/packages/",
+        "outputPath": "/home/jannyjaze/Project_Collections/BitFlipAcademy/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\L23Y16W08\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/home/jannyjaze/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -44,15 +37,16 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "Pomelo.EntityFrameworkCore.MySql": {
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
-              "version": "[9.0.0, )"
+              "version": "[8.*, )"
             }
           },
           "imports": [
@@ -66,6 +60,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.30, 8.0.30]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.linux-x64",
+              "version": "[8.0.30, 8.0.30]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.30, 8.0.30]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -74,7 +82,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.400/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.111/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

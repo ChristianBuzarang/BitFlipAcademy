@@ -11,7 +11,7 @@
 <style>
     /* Direct styles from dashboard.php */
     .top-nav-tabs { display: flex; gap: 30px; border-bottom: 1px solid #30363d; margin-bottom: 30px; }
-    .nav-tab { padding: 15px 5px; color: #8B949E; text-decoration: none; font-weight: bold; font-size: 16px; border-bottom: 3px solid transparent; cursor: pointer; }
+    .nav-tab { background: transparent; border: none; padding: 15px 5px; color: #8B949E; font-weight: bold; font-size: 16px; border-bottom: 3px solid transparent; cursor: pointer; }
     .nav-tab:hover { color: white; }
     .nav-tab.active { color: var(--neon-teal); border-bottom-color: var(--neon-teal); }
     
@@ -72,16 +72,31 @@
     <div class="top-nav-tabs">
         @if (Session.Role == "ADMIN")
         {
-            <a href="dashboard?view=main" class="nav-tab @(CurrentView == "main" ? "active" : "")">System Overview</a>
-            <a href="dashboard?view=users" class="nav-tab @(CurrentView == "users" ? "active" : "")">User Directory</a>
-            <a href="dashboard?view=archive" class="nav-tab @(CurrentView == "archive" ? "active" : "")">User Archive</a>
+            <button type="button" class="nav-tab @(CurrentView == "main" ? "active" : "")" 
+                    @onclick='() => Nav.NavigateTo("dashboard?view=main")'>
+                System Overview
+            </button>
+            <button type="button" class="nav-tab @(CurrentView == "users" ? "active" : "")" 
+                    @onclick='() => Nav.NavigateTo("dashboard?view=users")'>
+                User Directory
+            </button>
+            <button type="button" class="nav-tab @(CurrentView == "archive" ? "active" : "")" 
+                    @onclick='() => Nav.NavigateTo("dashboard?view=archive")'>
+                User Archive
+            </button>
         }
         else
         {
-            <a href="dashboard?view=main" class="nav-tab @(CurrentView == "main" || CurrentView == "missions" ? "active" : "")">Classes</a>
+            <button type="button" class="nav-tab @(CurrentView == "main" || CurrentView == "missions" ? "active" : "")"
+                    @onclick='() => Nav.NavigateTo("dashboard?view=main")'>
+                Classes
+            </button>
             @if (Session.Role == "STUDENT")
             {
-                <a href="dashboard?view=extra" class="nav-tab @(CurrentView == "extra" ? "active" : "")">Badges</a>
+                <button type="button" class="nav-tab @(CurrentView == "extra" ? "active" : "")" 
+                        @onclick='() => Nav.NavigateTo("dashboard?view=extra")'>
+                    Badges
+                </button>
             }
         }
     </div>
@@ -127,13 +142,21 @@
                 <p style="color: #8B949E; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin: 0;">
                     AGENT DIRECTORY (Total: @FilteredUsers.Count())
                 </p>
-                <input type="text" class="search-input" placeholder="SEARCH AGENTS..." @bind="searchTerm" @bind:event="oninput" />
+                <div style="display: flex; gap: 15px;">
+                    <button type="button" class="neon-btn btn-compact" @onclick="() => showAdminCreateModal = true">
+                        + CREATE AGENT
+                    </button>
+                    <input type="text" class="search-input" placeholder="SEARCH AGENTS..." @bind="searchTerm" @bind:event="oninput" />
+                </div>
             </div>
 
             <div class="sub-nav">
                 @foreach (var f in new[] { "ALL", "STUDENT", "PROFESSOR", "ADMIN" })
                 {
-                    <a href="dashboard?view=users&filter=@f" class="sub-tab @(Filter == f ? "active" : "")">@f</a>
+                    <button type="button" class="sub-tab @(Filter == f ? "active" : "")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=users&filter={f}")'>
+                        @f
+                    </button>
                 }
             </div>
 
@@ -204,7 +227,7 @@
     <!-- ========================================================================= -->
     <!--                      STUDENT & PROFESSOR VIEWS                            -->
     <!-- ========================================================================= -->
-    else
+    @if (Session.Role != "ADMIN")
     {
         @if (CurrentView == "main" || string.IsNullOrEmpty(CurrentView))
         {
@@ -232,21 +255,34 @@
         else if (CurrentView == "missions" && Sid.HasValue)
         {
             <div style="display:flex; align-items:center; margin-bottom: 25px;">
-                <a href="dashboard?view=main" class="control-btn btn-red" style="width:auto; margin-right:20px; padding: 10px 20px;">« BACK</a>
+                <button type="button" class="control-btn btn-red" style="width:auto; margin-right:20px; padding: 10px 20px;"
+                        @onclick='() => Nav.NavigateTo("dashboard?view=main")'>
+                    « BACK
+                </button>
                 <h2 style="margin:0;">@(currentSection?.SectionName ?? "Mission Hub")</h2>
             </div>
 
             <div class="sub-nav">
                 @if (Session.Role == "PROFESSOR")
                 {
-                    <a href="dashboard?view=missions&sid=@Sid&sub=ongoing" class="sub-tab @(SubView == "ongoing" ? "active" : "")">CHALLENGES</a>
-                    <a href="dashboard?view=missions&sid=@Sid&sub=roster" class="sub-tab @(SubView == "roster" ? "active" : "")">STUDENT ROSTER</a>
-                }
+                    <button type="button" class="sub-tab @(SubView == "ongoing" ? "active" : "")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=ongoing")'>
+                        CHALLENGES
+                    </button>
+                    <button type="button" class="sub-tab @(SubView == "roster" ? "active" : "")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=roster")'>
+                        STUDENT ROSTER
+                    </button>                }
                 else
                 {
-                    <a href="dashboard?view=missions&sid=@Sid&sub=ongoing" class="sub-tab @(SubView == "ongoing" ? "active" : "")">ONGOING</a>
-                    <a href="dashboard?view=missions&sid=@Sid&sub=completed" class="sub-tab @(SubView == "completed" ? "active" : "")">COMPLETED</a>
-                }
+                    <button type="button" class="sub-tab @(SubView == "ongoing" ? "active" : "")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=ongoing")'>
+                        ONGOING
+                    </button>
+                    <button type="button" class="sub-tab @(SubView == "completed" ? "active" : "")"
+                            @onclick='() => Nav.NavigateTo($"dashboard?view=missions&sid={Sid}&sub=completed")'>
+                        COMPLETED
+                    </button>                }
             </div>
 
             @if (SubView == "ongoing" || SubView == "completed")
@@ -283,7 +319,10 @@
 
                                 @if (SubView == "ongoing")
                                 {
-                                    <a href="play?id=@m.Cid" class="control-btn neon-btn btn-compact" style="margin-left:20px;">START</a>
+                                  <button type="button" class="control-btn neon-btn btn-compact" style="margin-left:20px;"
+                                          @onclick='() => Nav.NavigateTo($"play?id={m.Cid}")'>
+                                      START
+                                  </button>
                                 }
                                 else
                                 {
@@ -309,7 +348,10 @@
                                     <td>@r.Name</td>
                                     <td><span class="badge role-student">@r.Rank</span></td>
                                     <td style="text-align:center;">
-                                        <a href="progress?studid=@r.Uid&sid=@Sid" class="control-btn btn-green">VIEW LOGS</a>
+                                        <button type="button" class="control-btn btn-green"
+                                                @onclick='() => Nav.NavigateTo($"progress?studid={r.Uid}&sid={Sid}")'>
+                                            VIEW LOGS
+                                        </button>                                    
                                     </td>
                                 </tr>
                             }
@@ -350,6 +392,40 @@
     }
 
 </div>
+
+<!-- MODAL: ADMIN CREATE USER -->
+@if (showAdminCreateModal)
+{
+    <div class="modal">
+        <div class="cyber-card" style="width:450px; padding:40px; position:relative;">
+            <span style="position:absolute; right:20px; top:20px; cursor:pointer; color: white;" @onclick="() => showAdminCreateModal = false">✖</span>
+            <h2 style="color: var(--neon-teal); margin-top: 0; text-transform: uppercase;">PROVISION NEW AGENT</h2>
+
+            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">NAME</label>
+            <input type="text" class="input-field" placeholder="Full Name" @bind="adminNewName" />
+
+            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">EMAIL</label>
+            <input type="email" class="input-field" placeholder="Email Address" @bind="adminNewEmail" />
+
+            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">CLEARANCE LEVEL (ROLE)</label>
+            <select class="input-field" @bind="adminNewRole">
+                <option value="STUDENT">STUDENT</option>
+                <option value="PROFESSOR">PROFESSOR</option>
+                <option value="ADMIN">ADMIN</option>
+            </select>
+
+            <label style="color: #8B949E; font-size: 11px; font-weight: bold;">PASSWORD</label>
+            <input type="password" class="input-field" placeholder="Initial Security Key" @bind="adminNewPass" />
+
+            @if (!string.IsNullOrEmpty(adminModalError))
+            {
+                <p style="color:#ff4444; font-size:12px; margin-top:10px;">@adminModalError</p>
+            }
+
+            <button class="neon-btn" style="margin-top: 20px;" @onclick="AdminCreateUser">INITIALIZE IN DATABASE</button>
+        </div>
+    </div>
+}
 
 <!-- MODAL: CREATE / JOIN CLASS -->
 @if (showActionModal)
@@ -440,6 +516,13 @@
     private int newMissionTime = 30;
     private string newMissionDiff = "Easy";
 
+    private bool showAdminCreateModal = false;
+    private string adminNewName = "";
+    private string adminNewEmail = "";
+    private string adminNewRole = "STUDENT";
+    private string adminNewPass = "";
+    private string adminModalError = "";
+
     // View models
     public class SectionDto
     {
@@ -488,20 +571,20 @@
         SubView ??= "ongoing";
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         if (!Session.IsAuthenticated)
         {
             Nav.NavigateTo("/login", replace: true);
-            return;
         }
-
-        await LoadData();
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await LoadData();
+        if (Session.IsAuthenticated)
+        {
+            await LoadData();
+        }
     }
 
     private async Task LoadData()
@@ -661,6 +744,52 @@
         }
     }
 
+    private async Task AdminCreateUser()
+{
+      adminModalError = "";
+      if (string.IsNullOrWhiteSpace(adminNewName) || string.IsNullOrWhiteSpace(adminNewEmail) || string.IsNullOrWhiteSpace(adminNewPass))
+      {
+          adminModalError = "All parameters are mandatory.";
+          return;
+      }
+
+      var exists = await Db.Users.AnyAsync(u => u.Email.ToLower() == adminNewEmail.Trim().ToLower());
+      if (exists)
+      {
+          adminModalError = "An agent with this email already exists.";
+          return;
+      }
+
+      var newUser = new User
+      {
+          Name = adminNewName.Trim(),
+          Email = adminNewEmail.Trim().ToLower(),
+          Password = adminNewPass,
+          Role = adminNewRole,
+          IsActive = 1
+      };
+
+      Db.Users.Add(newUser);
+      await Db.SaveChangesAsync();
+
+      if (adminNewRole == "STUDENT")
+      {
+          var newStudent = new Student
+          {
+              StudId = newUser.Uid,
+              Rank = "Novice"
+          };
+          Db.Students.Add(newStudent);
+          await Db.SaveChangesAsync();
+      }
+
+      showAdminCreateModal = false;
+      adminNewName = "";
+      adminNewEmail = "";
+      adminNewPass = "";
+      await LoadData();
+  }
+
     private async Task CreateSection()
     {
         if (string.IsNullOrWhiteSpace(newSectionName) || string.IsNullOrWhiteSpace(newSectionPass)) return;
@@ -668,10 +797,18 @@
         using (var cmd = Db.Database.GetDbConnection().CreateCommand())
         {
             await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = $"INSERT INTO tblsection (section_name, semester, year, section_password) VALUES ('{newSectionName}', '1st', '2026', '{newSectionPass}'); SELECT LAST_INSERT_ID();";
+            cmd.CommandText = $"INSERT INTO tblsection (section_name, semester, year, section_password) VALUES (@name, '1st', '2026', @pass) RETURNING sid;";
+            
+            var pName = cmd.CreateParameter(); pName.ParameterName = "@name"; pName.Value = newSectionName; cmd.Parameters.Add(pName);
+            var pPass = cmd.CreateParameter(); pPass.ParameterName = "@pass"; pPass.Value = newSectionPass; cmd.Parameters.Add(pPass);
+
             var newSid = Convert.ToInt32(await cmd.ExecuteScalarAsync());
 
-            cmd.CommandText = $"INSERT INTO tblsection_professor (sid, pid) VALUES ({newSid}, {Session.Uid});";
+            cmd.Parameters.Clear();
+            cmd.CommandText = $"INSERT INTO tblsection_professor (sid, pid) VALUES (@sid, @pid);";
+            var pSid = cmd.CreateParameter(); pSid.ParameterName = "@sid"; pSid.Value = newSid; cmd.Parameters.Add(pSid);
+            var pPid = cmd.CreateParameter(); pPid.ParameterName = "@pid"; pPid.Value = Session.Uid; cmd.Parameters.Add(pPid);
+            
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -689,13 +826,17 @@
         using (var cmd = Db.Database.GetDbConnection().CreateCommand())
         {
             await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = $"SELECT sid FROM tblsection WHERE section_password = '{joinCode.Trim()}';";
+            cmd.CommandText = $"SELECT sid FROM tblsection WHERE section_password = @code;";
+            var pCode = cmd.CreateParameter();
+            pCode.ParameterName = "@code";
+            pCode.Value = joinCode.Trim();
+            cmd.Parameters.Add(pCode);
             var result = await cmd.ExecuteScalarAsync();
 
             if (result != null)
             {
                 int sid = Convert.ToInt32(result);
-                cmd.CommandText = $"INSERT IGNORE INTO tblsection_student (sid, studid) VALUES ({sid}, {Session.Uid});";
+                cmd.CommandText = $"INSERT INTO tblsection_student (sid, studid) VALUES ({sid}, {Session.Uid}) ON CONFLICT DO NOTHING;";
                 await cmd.ExecuteNonQueryAsync();
 
                 showActionModal = false;
@@ -716,7 +857,7 @@
         using (var cmd = Db.Database.GetDbConnection().CreateCommand())
         {
             await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = $"INSERT INTO tblchallenge (category, target_number, time_limit, difficulty_level) VALUES ('{newMissionCategory}', {newMissionTarget}, {newMissionTime}, '{newMissionDiff}'); SELECT LAST_INSERT_ID();";
+            cmd.CommandText = $"INSERT INTO tblchallenge (category, target_number, time_limit, difficulty_level) VALUES ('{newMissionCategory}', {newMissionTarget}, {newMissionTime}, '{newMissionDiff}') RETURNING cid;";
             var newCid = Convert.ToInt32(await cmd.ExecuteScalarAsync());
 
             cmd.CommandText = $"INSERT INTO tblchallenge_section (cid, sid) VALUES ({newCid}, {Sid.Value});";

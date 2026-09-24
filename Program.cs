@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using BitFlipBlazor.Components;
 using BitFlipBlazor.Data;
 using BitFlipBlazor.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,12 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
+builder.Services.AddScoped<MissionService>();
 builder.Services.AddScoped<ScoreService>();
-builder.Services.AddScoped<BitFlipBlazor.Services.UserSession>();
-builder.Services.AddScoped<BitFlipBlazor.Services.UserSession>();
+builder.Services.AddScoped<UserSession>();
 
 var app = builder.Build();
 
@@ -41,4 +39,3 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
-

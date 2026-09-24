@@ -39,7 +39,10 @@
     </div>
 
     <p style="font-size: 12px; margin-top: 20px; color: var(--text-gray);">
-        Don't Have An Account? <a href="/register" style="color: var(--neon-teal); text-decoration: none;">Register</a>
+        Don't Have An Account?        
+        <button type="button" class="btn-link" style="background:none; border:none; color: var(--neon-teal); cursor:pointer;" @onclick='() => Nav.NavigateTo("/register")'>
+            Register
+        </button>
     </p>
 </div>
 

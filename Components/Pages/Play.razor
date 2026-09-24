@@ -1,0 +1,320 @@
+@page "/play"
+@implements IDisposable
+@using BitFlipBlazor.Data
+@using BitFlipBlazor.Models
+@using BitFlipBlazor.Services
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext Db
+@inject UserSession Session
+@inject ScoreService ScoreService
+@inject NavigationManager Nav
+
+<PageTitle>Simulation Chamber | Bit-Flip Academy</PageTitle>
+
+<style>
+    .game-hud {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 30px;
+    }
+    .hud-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+    .target-box {
+        text-align: center;
+        background: rgba(0, 229, 255, 0.05);
+        border: 2px solid var(--neon-teal);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 35px;
+        box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+    }
+    .target-val {
+        font-size: 64px;
+        font-weight: 900;
+        color: var(--neon-teal);
+        font-family: monospace;
+        letter-spacing: 4px;
+        margin: 10px 0;
+    }
+    .bit-row {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 35px;
+        flex-wrap: wrap;
+    }
+    .bit-slot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 85px;
+    }
+    .bit-weight {
+        font-size: 13px;
+        color: #8B949E;
+        font-family: monospace;
+        margin-bottom: 8px;
+    }
+    .bit-toggle {
+        width: 80px;
+        height: 100px;
+        background: #161B22;
+        border: 2px solid #30363d;
+        border-radius: 10px;
+        color: #8B949E;
+        font-size: 36px;
+        font-weight: bold;
+        font-family: monospace;
+        cursor: pointer;
+        transition: 0.2s all ease-in-out;
+    }
+    .bit-toggle.active {
+        background: rgba(0, 229, 255, 0.15);
+        border-color: var(--neon-teal);
+        color: var(--neon-teal);
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+        transform: translateY(-4px);
+    }
+    .live-sum-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #1c2128;
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 15px 25px;
+        margin-bottom: 30px;
+        font-size: 18px;
+    }
+    .timer-badge {
+        font-family: monospace;
+        font-size: 20px;
+        font-weight: bold;
+        padding: 6px 16px;
+        border-radius: 6px;
+        border: 1px solid #30363d;
+    }
+</style>
+
+<div class="game-hud">
+    <!-- TOP STATUS -->
+    <div class="hud-header">
+        <div>
+            <h2 style="margin: 0; font-size: 22px;">MISSION SIMULATION</h2>
+            <p style="color: #8B949E; font-size: 12px; margin-top: 5px;">
+                OPERATIVE: @Session.Name | CATEGORY: @(challenge?.Category ?? "UNKNOWN")
+            </p>
+        </div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="timer-badge @(timeLeft <= 10 ? "text-danger border-danger" : "text-light")" 
+                 style="color: @(timeLeft <= 10 ? "#ef4444" : "#4ade80"); border-color: @(timeLeft <= 10 ? "#ef4444" : "#30363d");">
+                ⏱ @(timeLeft)s
+            </div>
+            <button type="button" class="control-btn btn-red" @onclick="AbortMission">ABORT</button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="cyber-card" style="text-align: center; padding: 60px;">
+            <p style="color: #8B949E;">INITIALIZING QUANTUM REGISTERS...</p>
+        </div>
+    }
+    else if (challenge == null)
+    {
+        <div class="cyber-card" style="text-align: center; padding: 50px;">
+            <p style="color: #ef4444;">MISSION DATA CORRUPTED OR NOT FOUND.</p>
+            <button type="button" class="neon-btn btn-compact" @onclick="AbortMission">RETURN TO HUD</button>
+        </div>
+    }
+    else if (isFinished)
+    {
+        <!-- RESULT SCREEN -->
+        <div class="cyber-card" style="text-align: center; padding: 50px;">
+            <h1 style="color: @(isPassed ? "var(--neon-teal)" : "#ef4444"); margin-top: 0;">
+                @(isPassed ? "MISSION ACCOMPLISHED" : "OPERATION FAILED")
+            </h1>
+            <p style="color: #8B949E; margin-bottom: 25px;">
+                @(isPassed ? "Target binary configuration matched successfully." : "Time expired or incorrect register states.")
+            </p>
+
+            <div style="display: flex; justify-content: center; gap: 25px; margin-bottom: 35px;">
+                <div class="stat-circle" style="width: 90px; height: 90px; border-color: var(--neon-teal);">
+                    <span style="font-size: 10px;">FINAL SCORE</span>
+                    <b style="font-size: 20px; color: var(--neon-teal);">@finalScore / 400</b>
+                </div>
+                <div class="stat-circle" style="width: 90px; height: 90px;">
+                    <span style="font-size: 10px;">TIME TAKEN</span>
+                    <b style="font-size: 20px;">@(timeTaken)s</b>
+                </div>
+            </div>
+
+            <button type="button" class="neon-btn" style="width: 250px;" @onclick="AbortMission">
+                BACK TO DASHBOARD
+            </button>
+        </div>
+    }
+    else
+    {
+        <!-- ACTIVE GAMEPLAY -->
+        <div class="target-box">
+            <span style="color: #8B949E; font-size: 12px; letter-spacing: 2px;">TARGET DECIMAL</span>
+            <div class="target-val">@challenge.TargetNumber</div>
+            <span class="badge role-student">@challenge.DifficultyLevel</span>
+        </div>
+
+        <div class="bit-row">
+            @for (int i = 0; i < 8; i++)
+            {
+                var bitIndex = i;
+                var weight = 1 << (7 - bitIndex); // 128, 64, 32, 16, 8, 4, 2, 1
+                <div class="bit-slot">
+                    <span class="bit-weight">@weight</span>
+                    <button type="button" 
+                            class="bit-toggle @(bits[bitIndex] ? "active" : "")" 
+                            @onclick="() => ToggleBit(bitIndex)">
+                        @(bits[bitIndex] ? "1" : "0")
+                    </button>
+                </div>
+            }
+        </div>
+
+        <div class="live-sum-bar">
+            <span>CURRENT SUM: <b style="color: @(currentSum == challenge.TargetNumber ? "#4ade80" : "white");">@currentSum</b></span>
+            <span>BINARY: <code style="color: var(--neon-teal);">@CurrentBinaryString</code></span>
+        </div>
+
+        <button type="button" 
+                class="neon-btn" 
+                style="padding: 16px;" 
+                @onclick="SubmitRegisters">
+            SUBMIT CONFIGURATION
+        </button>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "id")]
+    public int? ChallengeId { get; set; }
+
+    private Challenge? challenge;
+    private bool isLoading = true;
+    private bool isFinished = false;
+    private bool isPassed = false;
+    private int finalScore = 0;
+    private int timeLeft = 30;
+    private int timeTaken = 0;
+
+    private bool[] bits = new bool[8];
+    private System.Threading.Timer? countdownTimer;
+
+    private int currentSum => bits.Select((b, idx) => b ? (1 << (7 - idx)) : 0).Sum();
+    private string CurrentBinaryString => string.Concat(bits.Select(b => b ? "1" : "0"));
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Session.IsAuthenticated) return;
+
+        if (!ChallengeId.HasValue)
+        {
+            isLoading = false;
+            return;
+        }
+
+        challenge = await Db.Challenges.FirstOrDefaultAsync(c => c.Cid == ChallengeId.Value);
+        if (challenge != null)
+        {
+            timeLeft = challenge.TimeLimit;
+            StartTimer();
+        }
+
+        isLoading = false;
+    }
+
+    private void StartTimer()
+    {
+        countdownTimer = new System.Threading.Timer(async _ =>
+        {
+            if (timeLeft > 0 && !isFinished)
+            {
+                timeLeft--;
+                timeTaken++;
+                await InvokeAsync(StateHasChanged);
+            }
+            else if (timeLeft <= 0 && !isFinished)
+            {
+                await InvokeAsync(async () => await EndGame(false));
+            }
+        }, null, 1000, 1000);
+    }
+
+    private void ToggleBit(int index)
+    {
+        if (isFinished) return;
+        bits[index] = !bits[index];
+    }
+
+    private async Task SubmitRegisters()
+    {
+        if (challenge == null || isFinished) return;
+
+        bool success = currentSum == challenge.TargetNumber;
+        await EndGame(success);
+    }
+
+    private async Task EndGame(bool passed)
+    {
+        isFinished = true;
+        isPassed = passed;
+        countdownTimer?.Dispose();
+
+        if (passed && challenge != null)
+        {
+            // Calculate score out of 400: Base 200 + Time Bonus 200
+            double timeRatio = (double)timeLeft / challenge.TimeLimit;
+            finalScore = 200 + (int)Math.Round(timeRatio * 200);
+        }
+        else
+        {
+            finalScore = 0;
+        }
+
+        if (challenge != null)
+        {
+            await ScoreService.SaveScoreAsync(
+                Session.Uid, 
+                challenge.Cid, 
+                finalScore, 
+                isPassed ? 1 : 0, 
+                timeTaken
+            );
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void AbortMission()
+    {
+        countdownTimer?.Dispose();
+        Nav.NavigateTo("dashboard?view=main");
+    }
+
+    public void Dispose()
+    {
+        countdownTimer?.Dispose();
+    }
+}
