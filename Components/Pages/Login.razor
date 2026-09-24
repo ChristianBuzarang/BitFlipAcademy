@@ -10,37 +10,44 @@
 
 <PageTitle>Bit-Flip Login</PageTitle>
 
-<div class="login-container">
-    <img src="bitflip_logo.png" class="logo" alt="Bit-Flip Logo" style="max-width: 150px; margin-bottom: 20px;" />
-    <p style="color: var(--neon-teal); letter-spacing: 2px; font-weight: bold; margin-bottom: 20px;">LOG IN</p>
+<div class="min-h-screen flex flex-col justify-center items-center pb-24 bg-[#0D1117] text-white select-none">
+    <img src="bitflip_logo.png" class="max-w-[150px] mb-5 drop-shadow-[0_0_12px_rgba(0,229,255,0.3)]" alt="Bit-Flip Logo" />
+    <p class="text-[#00E5FF] tracking-[2px] font-bold mb-5 text-sm uppercase">LOG IN</p>
 
     @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <p style="color: #ff4444; font-size: 13px; margin-bottom: 15px;">@errorMessage</p>
+        <div class="w-[300px] mb-4 p-2.5 rounded bg-red-950/60 border border-red-500/50 text-red-400 text-xs text-center transition-all animate-shake">
+            @errorMessage
+        </div>
     }
 
-    <div style="width: 300px;">
+    <div class="w-[300px] flex flex-col gap-3.5">
         <input type="email" 
-               class="input-field" 
+               class="w-full bg-[#f0ece2] text-black px-4 py-3 rounded-md outline-none text-sm transition-all duration-200 focus:ring-2 focus:ring-[#00E5FF] focus:bg-white placeholder:text-gray-500" 
                placeholder="Email (School Email)" 
                @bind="email" 
                disabled="@isProcessing" />
 
         <input type="password" 
-               class="input-field" 
+               class="w-full bg-[#f0ece2] text-black px-4 py-3 rounded-md outline-none text-sm transition-all duration-200 focus:ring-2 focus:ring-[#00E5FF] focus:bg-white placeholder:text-gray-500" 
                placeholder="Password" 
                @bind="password" 
                @onkeydown="HandleKeyDown"
                disabled="@isProcessing" />
 
-        <button type="button" class="neon-btn" @onclick="HandleLogin" disabled="@isProcessing">
+        <button type="button" 
+                class="w-full py-3 mt-1 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 ease-out hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.5)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer" 
+                @onclick="HandleLogin" 
+                disabled="@isProcessing">
             @(isProcessing ? "AUTHENTICATING..." : "Log In")
         </button>
     </div>
 
-    <p style="font-size: 12px; margin-top: 20px; color: var(--text-gray);">
+    <p class="text-xs mt-6 text-[#8B949E]">
         Don't Have An Account?        
-        <button type="button" class="btn-link" style="background:none; border:none; color: var(--neon-teal); cursor:pointer;" @onclick='() => Nav.NavigateTo("/register")'>
+        <button type="button" 
+                class="text-[#00E5FF] font-semibold hover:underline cursor-pointer transition-colors hover:text-white ml-1" 
+                @onclick='() => Nav.NavigateTo("/register")'>
             Register
         </button>
     </p>
@@ -54,7 +61,7 @@
 
     private async Task HandleLogin()
     {
-        if (isProcessing) return; // Prevent concurrent calls
+        if (isProcessing) return;
 
         errorMessage = "";
 
