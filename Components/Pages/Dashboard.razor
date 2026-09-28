@@ -494,7 +494,13 @@
                       <!-- Post Header: Mission Badge + Author + Rating -->
                       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#30363d]/60 pb-4">
                           <div>
-                              <div class="flex items-center gap-2">
+                              <div class="flex items-center gap-2 flex-wrap">
+                                  <!-- Section Indicator -->
+                                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                      SECTION: @fb.SectionName
+                                  </span>
+
+                                  <!-- Mission & Target Info -->
                                   <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40">
                                       MISSION #@fb.Cid • @fb.Category
                                   </span>
@@ -830,6 +836,7 @@
     {
         public int Fbid { get; set; }
         public int Cid { get; set; }
+        public string SectionName { get; set; } = "";
         public string Category { get; set; } = "";
         public int TargetNumber { get; set; }
         public string AuthorName { get; set; } = "";
@@ -1085,19 +1092,24 @@
             if (Session.Role == "ADMIN")
             {
                 cmd.CommandText = @"
-                    SELECT f.fbid, f.cid, c.category, c.target_number, u.name, f.rating, f.comment_text, f.date_submitted
+                    SELECT f.fbid, f.cid, COALESCE(sec.section_name, 'Global') AS section_name,
+                            c.category, c.target_number, u.name, f.rating, f.comment_text, f.date_submitted
                     FROM tblchallenge_feedback f
                     JOIN tblchallenge c ON f.cid = c.cid
+                    LEFT JOIN tblchallenge_section cs ON c.cid = cs.cid
+                    LEFT JOIN tblsection sec ON cs.sid = sec.sid
                     JOIN tbluser u ON f.studid = u.uid
                     ORDER BY f.date_submitted DESC;";
             }
             else
             {
                 cmd.CommandText = @"
-                    SELECT DISTINCT f.fbid, f.cid, c.category, c.target_number, u.name, f.rating, f.comment_text, f.date_submitted
+                    SELECT DISTINCT f.fbid, f.cid, sec.section_name,
+                            c.category, c.target_number, u.name, f.rating, f.comment_text, f.date_submitted
                     FROM tblchallenge_feedback f
                     JOIN tblchallenge c ON f.cid = c.cid
                     JOIN tblchallenge_section cs ON c.cid = cs.cid
+                    JOIN tblsection sec ON cs.sid = sec.sid
                     JOIN tbluser u ON f.studid = u.uid
                     WHERE cs.sid IN (
                         SELECT sid FROM tblsection_student WHERE studid = @uid
@@ -1120,12 +1132,13 @@
                     {
                         Fbid = reader.GetInt32(0),
                         Cid = reader.GetInt32(1),
-                        Category = reader.GetString(2),
-                        TargetNumber = reader.GetInt32(3),
-                        AuthorName = reader.GetString(4),
-                        Rating = reader.GetInt32(5),
-                        Comment = reader.GetString(6),
-                        DateSubmitted = reader.GetDateTime(7)
+                        SectionName = reader.GetString(2),
+                        Category = reader.GetString(3),
+                        TargetNumber = reader.GetInt32(4),
+                        AuthorName = reader.GetString(5),
+                        Rating = reader.GetInt32(6),
+                        Comment = reader.GetString(7),
+                        DateSubmitted = reader.GetDateTime(8)
                     });
                 }
             }

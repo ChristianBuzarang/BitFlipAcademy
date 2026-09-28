@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BitFlipBlazor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+35ea6ae2d59d52d18f10b6f3af2c2784c69106da")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cc6c8331e4f2da7709f0589a5b6053bf13988b32")]
 [assembly: System.Reflection.AssemblyProductAttribute("BitFlipBlazor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BitFlipBlazor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
