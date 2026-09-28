@@ -73,6 +73,12 @@
                     Badges
                 </button>
             }
+            <button type="button" 
+                    class="py-3 px-1 font-bold text-sm tracking-wide transition-all duration-200 border-b-2 cursor-pointer
+                           @(CurrentView == "feedback" ? "text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-transparent hover:text-white")" 
+                    @onclick='() => Nav.NavigateTo("dashboard?view=feedback")'>
+                Debriefs
+            </button>
         }
     </div>
 
@@ -453,7 +459,171 @@
         }
     }
 
+    <!-- ========================================================================= -->
+    <!--                     DEBRIEFS / FEEDBACK HUB VIEW                         -->
+    <!-- ========================================================================= -->
+    @if (CurrentView == "feedback")
+  {
+      <div class="flex justify-between items-center mb-6">
+          <div>
+             <h2 class="text-xl font-bold text-white tracking-tight">MISSION DEBRIEFS & DISCUSSION FORUM</h2>
+              <p class="text-xs text-[#8B949E] mt-1">Tactical analyses on completed section missions with community debrief discussion</p>
+          </div>
+          @if (Session.Role == "STUDENT")
+          {
+              <button type="button" 
+                      class="px-5 py-2.5 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer"
+                      @onclick="OpenFeedbackModal">
+                  + POST MISSION DEBRIEF
+              </button>
+          }
+      </div>
+
+      @if (!feedbackList.Any())
+      {
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-12 text-center text-[#8B949E]">
+            No debriefs published yet for your section's missions.
+        </div>
+      }
+      else
+      {
+          <div class="flex flex-col gap-6">
+              @foreach (var fb in feedbackList)
+              {
+                  <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-6 shadow-xl flex flex-col gap-4">
+                      <!-- Post Header: Mission Badge + Author + Rating -->
+                      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#30363d]/60 pb-4">
+                          <div>
+                              <div class="flex items-center gap-2">
+                                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40">
+                                      MISSION #@fb.Cid • @fb.Category
+                                  </span>
+                                  <span class="text-xs font-mono text-emerald-400">Target: @fb.TargetNumber</span>
+                              </div>
+                              <h3 class="text-base font-bold text-white mt-1">Operative: @fb.AuthorName</h3>
+                          </div>
+                          <div class="flex items-center text-lg select-none">
+                              @for (int i = 1; i <= 5; i++)
+                              {
+                                  <span style="color: @(i <= fb.Rating ? "#f59e0b" : "#30363d"); font-size: 1.25rem;">★</span>
+                              }
+                          </div>
+                      </div>
+
+                      <!-- Post Body: Operative Feedback -->
+                      <p class="text-sm text-gray-200 bg-[#0D1117]/80 border border-[#30363d]/60 rounded-lg p-4 font-mono leading-relaxed">
+                          "@fb.Comment"
+                      </p>
+
+                      <div class="text-[11px] text-[#8B949E] font-mono">
+                          LOGGED: @fb.DateSubmitted.ToString("yyyy-MM-dd HH:mm")
+                      </div>
+
+                      <!-- Comments / Threaded Discussion Section -->
+                      <div class="mt-2 pt-4 border-t border-[#30363d]/50">
+                          <p class="text-xs font-bold text-[#8B949E] tracking-wider uppercase mb-3">
+                              Discussion (@fb.Replies.Count)
+                          </p>
+
+                          @if (fb.Replies.Any())
+                          {
+                              <div class="flex flex-col gap-2.5 mb-4">
+                                  @foreach (var reply in fb.Replies)
+                                  {
+                                      <div class="bg-[#0D1117] border border-[#30363d]/40 rounded-lg p-3 text-xs">
+                                          <div class="flex justify-between items-center mb-1">
+                                              <span class="font-bold text-[#00E5FF]">@reply.UserName</span>
+                                              <span class="text-[10px] text-[#8B949E] font-mono">@reply.DateReplied.ToString("MM-dd HH:mm")</span>
+                                          </div>
+                                          <p class="text-gray-300 font-mono">@reply.ReplyText</p>
+                                      </div>
+                                  }
+                              </div>
+                          }
+
+                          <!-- Add Comment Bar -->
+                          <div class="flex gap-2">
+                              <input type="text" 
+                                     class="flex-grow bg-[#0D1117] border border-[#30363d] rounded-lg px-4 py-2 text-xs text-white outline-none focus:border-[#00E5FF] font-mono placeholder:text-gray-600"
+                                     placeholder="Add debrief comment or strategy tip..."
+                                     @bind="replyInputs[fb.Fbid]"
+                                     @onkeydown="@(async e => { if (e.Key == "Enter") await SubmitReply(fb.Fbid); })" />
+
+                              <button type="button" 
+                                      class="px-4 py-2 bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40 text-xs font-bold rounded-lg hover:bg-[#00E5FF] hover:text-black transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                                      @onclick="() => SubmitReply(fb.Fbid)">
+                                  REPLY
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              }
+          </div>
+      }
+  }
 </div>
+
+<!-- MODAL: POST REVIEW & RATING (STUDENT) -->
+@if (showFeedbackModal)
+{
+    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl w-full max-w-md p-8 relative shadow-2xl">
+            <button class="absolute top-5 right-5 text-gray-400 hover:text-white cursor-pointer text-lg" @onclick="() => showFeedbackModal = false">✖</button>
+            <h2 class="text-[#00E5FF] text-base font-bold uppercase tracking-wider mb-5">LOG MISSION DEBRIEF</h2>
+
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">SELECT ANSWERED MISSION</label>
+                    <select class="w-full bg-[#f0ece2] text-black px-3.5 py-2.5 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF] cursor-pointer" @bind="selectedFeedbackCid">
+                        <option value="0">-- Select Answered Mission --</option>
+                        @foreach (var c in reviewableMissions)
+                        {
+                            <option value="@c.Cid">#@c.Cid - @c.Category (Target: @c.TargetNumber)</option>
+                        }
+                    </select>
+                    @if (!reviewableMissions.Any())
+                    {
+                        <p class="text-amber-400 text-[11px] mt-1">You have not completed any missions from your enrolled classes yet.</p>
+                    }
+                </div>
+
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-2">ENGAGEMENT / DIFFICULTY RATING</label>
+                    <div class="flex items-center gap-1 select-none">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            var starValue = i;
+                            <button type="button" 
+                                    style="color: @(newRating >= starValue ? "#f59e0b" : "#30363d"); background: none; border: none; font-size: 2rem; cursor: pointer; padding: 0 4px; line-height: 1;"
+                                    @onclick="() => newRating = starValue">
+                                ★
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[#8B949E] text-[11px] font-bold block mb-1">DEBRIEF TRANSMISSION (COMMENT)</label>
+                    <textarea rows="4" 
+                              class="w-full bg-[#f0ece2] text-black px-3.5 py-2.5 rounded text-sm outline-none focus:ring-2 focus:ring-[#00E5FF] placeholder:text-gray-500 font-mono resize-none" 
+                              placeholder="Describe your solution strategy, difficulty curve, or register pacing..." 
+                              @bind="newComment"></textarea>
+                </div>
+
+                @if (!string.IsNullOrEmpty(feedbackError))
+                {
+                    <p class="text-red-400 text-xs mt-1">@feedbackError</p>
+                }
+
+                <button class="w-full mt-2 py-3 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer disabled:opacity-50" 
+                        disabled="@(!reviewableMissions.Any())"
+                        @onclick="SubmitFeedback">
+                    TRANSMIT LOG
+                </button>
+            </div>
+        </div>
+    </div>
+}
 
 <!-- MODAL: ADMIN CREATE USER -->
 @if (showAdminCreateModal)
@@ -617,6 +787,13 @@
     private string adminNewPass = "";
     private string adminModalError = "";
 
+    private bool showFeedbackModal = false;
+    private int selectedFeedbackCid = 0;
+    private int newRating = 5;
+    private string newComment = "";
+    private string feedbackError = "";
+    private Dictionary<int, string> replyInputs = new();
+
     public class SectionDto
     {
         public int Sid { get; set; }
@@ -649,12 +826,43 @@
         public string Rank { get; set; } = "Novice";
     }
 
+    public class FeedbackDto
+    {
+        public int Fbid { get; set; }
+        public int Cid { get; set; }
+        public string Category { get; set; } = "";
+        public int TargetNumber { get; set; }
+        public string AuthorName { get; set; } = "";
+        public int Rating { get; set; }
+        public string Comment { get; set; } = "";
+        public DateTime DateSubmitted { get; set; }
+        public List<ReplyDto> Replies { get; set; } = new();
+    }
+
+    public class ReplyDto
+    {
+        public int ReplyId { get; set; }
+        public string UserName { get; set; } = "";
+        public string ReplyText { get; set; } = "";
+        public DateTime DateReplied { get; set; }
+    }
+
+    public class AnsweredMissionDto
+    {
+        public int Cid { get; set; }
+        public string Category { get; set; } = "";
+        public int TargetNumber { get; set; }
+    }
+
     private List<User> usersList = new();
     private List<User> archivedUsersList = new();
     private List<SectionDto> userSections = new();
     private List<MissionDto> missionsList = new();
     private List<BadgeDto> studentBadges = new();
     private List<RosterDto> sectionRoster = new();
+    private List<FeedbackDto> feedbackList = new();
+    private List<AnsweredMissionDto> reviewableMissions = new();
+    
     private UserSession.SectionState? currentSection;
     private int? lastLoadedSid;
     private string? lastSubView;
@@ -687,6 +895,12 @@
             return;
         }
 
+        if (CurrentView == "feedback")
+        {
+            await LoadFeedbacks();
+            return; 
+        }
+
         if (Sid.HasValue && (lastLoadedSid != Sid.Value || lastSubView != SubView))
         {
             lastLoadedSid = Sid.Value;
@@ -696,7 +910,52 @@
         else if (CurrentView == "extra" && studentBadges.Count == 0)
         {
             await LoadBadges();
-        }    }
+        }
+    }
+
+    private async Task OpenFeedbackModal()
+    {
+        feedbackError = "";
+        newComment = "";
+        newRating = 5;
+        selectedFeedbackCid = 0;
+
+        // Fetch ONLY missions the student has answered from enrolled sections
+        reviewableMissions.Clear();
+        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+        {
+            await Db.Database.OpenConnectionAsync();
+            cmd.CommandText = @"
+                SELECT DISTINCT c.cid, c.category, c.target_number
+                FROM tblchallenge c
+                JOIN tblchallenge_section cs ON c.cid = cs.cid
+                JOIN tblsection_student ss ON cs.sid = ss.sid
+                JOIN tblchallenge_record cr ON c.cid = cr.cid
+                JOIN tblstudent_record sr ON cr.srid = sr.srid
+                WHERE ss.studid = @uid AND sr.studid = @uid
+                ORDER BY c.cid DESC;";
+
+            var pUid = cmd.CreateParameter();
+            pUid.ParameterName = "@uid";
+            pUid.Value = Session.Uid;
+            cmd.Parameters.Add(pUid);
+
+            using (var reader = await cmd.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    reviewableMissions.Add(new AnsweredMissionDto
+                    {
+                        Cid = reader.GetInt32(0),
+                        Category = reader.GetString(1),
+                        TargetNumber = reader.GetInt32(2)
+                    });
+                }
+            }
+        }
+
+        showFeedbackModal = true;
+    }
 
     private async Task LoadAdminData()
     {
@@ -813,6 +1072,175 @@
             }
         }
         studentBadges = tempBadges;
+    }
+
+    private async Task LoadFeedbacks()
+    {
+        var tempFeedbacks = new List<FeedbackDto>();
+        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+        {
+            await Db.Database.OpenConnectionAsync();
+            
+            // Scope debriefs: Admin sees all; Students/Professors see posts for their sections
+            if (Session.Role == "ADMIN")
+            {
+                cmd.CommandText = @"
+                    SELECT f.fbid, f.cid, c.category, c.target_number, u.name, f.rating, f.comment_text, f.date_submitted
+                    FROM tblchallenge_feedback f
+                    JOIN tblchallenge c ON f.cid = c.cid
+                    JOIN tbluser u ON f.studid = u.uid
+                    ORDER BY f.date_submitted DESC;";
+            }
+            else
+            {
+                cmd.CommandText = @"
+                    SELECT DISTINCT f.fbid, f.cid, c.category, c.target_number, u.name, f.rating, f.comment_text, f.date_submitted
+                    FROM tblchallenge_feedback f
+                    JOIN tblchallenge c ON f.cid = c.cid
+                    JOIN tblchallenge_section cs ON c.cid = cs.cid
+                    JOIN tbluser u ON f.studid = u.uid
+                    WHERE cs.sid IN (
+                        SELECT sid FROM tblsection_student WHERE studid = @uid
+                        UNION
+                        SELECT sid FROM tblsection_professor WHERE pid = @uid
+                    )
+                    ORDER BY f.date_submitted DESC;";
+
+                var pUid = cmd.CreateParameter();
+                pUid.ParameterName = "@uid";
+                pUid.Value = Session.Uid;
+                cmd.Parameters.Add(pUid);
+            }
+
+            using (var reader = await cmd.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    tempFeedbacks.Add(new FeedbackDto
+                    {
+                        Fbid = reader.GetInt32(0),
+                        Cid = reader.GetInt32(1),
+                        Category = reader.GetString(2),
+                        TargetNumber = reader.GetInt32(3),
+                        AuthorName = reader.GetString(4),
+                        Rating = reader.GetInt32(5),
+                        Comment = reader.GetString(6),
+                        DateSubmitted = reader.GetDateTime(7)
+                    });
+                }
+            }
+        }
+
+        // Fetch replies for each post
+        foreach (var fb in tempFeedbacks)
+        {
+            if (!replyInputs.ContainsKey(fb.Fbid))
+            {
+                replyInputs[fb.Fbid] = "";
+            }
+
+            using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+            {
+                await Db.Database.OpenConnectionAsync();
+                cmd.CommandText = @"
+                    SELECT r.reply_id, u.name, r.reply_text, r.date_replied
+                    FROM tblfeedback_reply r
+                    JOIN tbluser u ON r.uid = u.uid
+                    WHERE r.fbid = @fbid
+                    ORDER BY r.date_replied ASC;";
+
+                var pFbid = cmd.CreateParameter();
+                pFbid.ParameterName = "@fbid";
+                pFbid.Value = fb.Fbid;
+                cmd.Parameters.Add(pFbid);
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        fb.Replies.Add(new ReplyDto
+                        {
+                            ReplyId = reader.GetInt32(0),
+                            UserName = reader.GetString(1),
+                            ReplyText = reader.GetString(2),
+                            DateReplied = reader.GetDateTime(3)
+                        });
+                    }
+                }
+            }
+        }
+
+        feedbackList = tempFeedbacks;
+    }
+    
+    private async Task SubmitFeedback()
+    {
+        feedbackError = "";
+        if (selectedFeedbackCid <= 0)
+        {
+            feedbackError = "Please select an answered mission to review.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newComment))
+        {
+            feedbackError = "Debrief commentary cannot be empty.";
+            return;
+        }
+
+        try
+        {
+            var feedback = new ChallengeFeedback
+            {
+                Cid = selectedFeedbackCid,
+                StudId = Session.Uid,
+                Rating = newRating,
+                CommentText = newComment.Trim(),
+                DateSubmitted = DateTime.UtcNow
+            };
+
+            Db.ChallengeFeedbacks.Add(feedback);
+            await Db.SaveChangesAsync();
+
+            showFeedbackModal = false;
+            newComment = "";
+            newRating = 5;
+            selectedFeedbackCid = 0;
+            await LoadFeedbacks();
+        }
+        catch (Exception ex)
+        {
+            feedbackError = $"Failed to log debrief: {ex.Message}";
+        }
+    }
+
+    private async Task SubmitReply(int fbid)
+    {
+        if (!replyInputs.TryGetValue(fbid, out var replyText) || string.IsNullOrWhiteSpace(replyText))
+        {
+            return;
+        }
+
+        try
+        {
+            var reply = new FeedbackReply
+            {
+                Fbid = fbid,
+                Uid = Session.Uid,
+                ReplyText = replyText.Trim(),
+                DateReplied = DateTime.UtcNow
+            };
+
+            Db.FeedbackReplies.Add(reply);
+            await Db.SaveChangesAsync();
+
+            replyInputs[fbid] = "";
+            await LoadFeedbacks();
+        }
+        catch
+        {
+            // Silently retain input if submission fails
+        }
     }
 
     private IEnumerable<User> FilteredUsers => usersList.Where(u =>
