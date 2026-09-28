@@ -1,0 +1,230 @@
+@page "/sandbox"
+@using BitFlipBlazor.Services
+@inject UserSession Session
+@inject NavigationManager Nav
+
+<PageTitle>Training Chamber | Bit-Flip Academy</PageTitle>
+
+<div class="px-8 py-8 max-w-[1100px] mx-auto min-h-screen text-white bg-[#0D1117]">
+    
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-8 border-b border-[#30363d]/60 pb-5">
+        <div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold tracking-tight text-white uppercase">NEURAL TRAINING CHAMBER</h1>
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    SANDBOX MODE (UNGRADED)
+                </span>
+            </div>
+            <p class="text-[#8B949E] text-xs font-mono mt-1">
+                Zero-risk register emulator • Free manipulation & procedural drill generator
+            </p>
+        </div>
+        <div>
+            <button type="button" 
+                    class="px-4 py-2 bg-[#161B22] text-[#8B949E] border border-[#30363d] text-xs font-bold rounded-lg transition-all hover:text-white hover:border-[#00E5FF] active:scale-95 cursor-pointer"
+                    @onclick='() => Nav.NavigateTo("/dashboard")'>
+                « RETURN TO HUD
+            </button>
+        </div>
+    </div>
+
+    <!-- MODE CONTROLS & BIT DEPTH SWITCHER -->
+    <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-5 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
+        <div class="flex items-center gap-3">
+            <span class="text-xs font-bold text-[#8B949E] uppercase tracking-wider">REGISTER WIDTH:</span>
+            <div class="flex gap-2">
+                @foreach (var width in new[] { 4, 8, 16 })
+                {
+                    <button type="button" 
+                            class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer
+                                   @(bitWidth == width 
+                                       ? "bg-[#00E5FF]/20 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_10px_rgba(0,229,255,0.2)]" 
+                                       : "bg-[#0D1117] text-[#8B949E] border-[#30363d] hover:border-gray-500")"
+                            @onclick="() => SetBitWidth(width)">
+                        @(width)-BIT @(width == 4 ? "(NIBBLE)" : width == 8 ? "(BYTE)" : "(WORD)")
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" 
+                    class="px-4 py-2 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer"
+                    @onclick="GenerateNewTarget">
+                ⚡ ROLL RANDOM TARGET
+            </button>
+            <button type="button" 
+                    class="px-3.5 py-2 bg-[#0D1117] text-[#8B949E] border border-[#30363d] text-xs font-bold rounded-lg transition-all hover:text-red-400 hover:border-red-500 active:scale-95 cursor-pointer"
+                    @onclick="ResetBits">
+                CLEAR BITS
+            </button>
+        </div>
+    </div>
+
+    <!-- TARGET CHALLENGE MONITOR (OPTIONAL DRILL) -->
+    @if (targetNumber.HasValue)
+    {
+        <div class="bg-[#00E5FF]/5 border-2 @(currentSum == targetNumber.Value ? "border-emerald-400 shadow-[0_0_20px_rgba(74,222,128,0.2)]" : "border-[#00E5FF] shadow-[0_0_20px_rgba(0,229,255,0.15)]") rounded-xl p-6 mb-8 text-center transition-all duration-300">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-mono font-bold text-[#8B949E] tracking-widest uppercase">DRILL OBJECTIVE</span>
+                <button type="button" class="text-xs text-gray-500 hover:text-white cursor-pointer" @onclick="() => targetNumber = null">✕ Dismiss Objective</button>
+            </div>
+            
+            <div class="text-5xl font-black font-mono tracking-widest my-2 @(currentSum == targetNumber.Value ? "text-emerald-400 animate-bounce" : "text-[#00E5FF]")">
+                @targetNumber.Value
+            </div>
+
+            <p class="text-xs font-mono @(currentSum == targetNumber.Value ? "text-emerald-400 font-bold" : "text-[#8B949E]")">
+                @(currentSum == targetNumber.Value ? "✔ TARGET MATCHED PERFECTLY! FLIP BITS OR ROLL ANOTHER." : $"CURRENT DELTA: {(targetNumber.Value - currentSum > 0 ? $"+{targetNumber.Value - currentSum} needed" : $"{currentSum - targetNumber.Value} exceeded")}")
+            </p>
+        </div>
+    }
+
+    <!-- INTERACTIVE BIT TOGGLE SWITCHES -->
+    <div class="bg-[#161B22] border border-[#30363d] rounded-2xl p-8 mb-8 shadow-2xl">
+        <div class="flex justify-center gap-3 flex-wrap">
+            @for (int i = 0; i < bitWidth; i++)
+            {
+                var bitIndex = i;
+                var power = bitWidth - 1 - bitIndex;
+                var weight = 1 << power;
+                var isActive = bits[bitIndex];
+
+                <div class="flex flex-col items-center @(bitWidth == 16 ? "w-14" : "w-20")">
+                    <!-- Power / Weight Indicator -->
+                    <span class="text-[10px] text-[#8B949E] font-mono mb-0.5">2<sup>@power</sup></span>
+                    <span class="text-xs font-mono font-bold mb-2 @(isActive ? "text-[#00E5FF]" : "text-[#8B949E]")">
+                        @weight
+                    </span>
+
+                    <!-- Physical Switch -->
+                    <button type="button" 
+                            class="@(bitWidth == 16 ? "w-14 h-20 text-2xl" : "w-20 h-24 text-3xl") font-mono font-bold rounded-xl border-2 transition-all duration-200 ease-in-out cursor-pointer active:scale-90 select-none
+                                   @(isActive 
+                                       ? "bg-[#00E5FF]/20 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_15px_rgba(0,229,255,0.3)] -translate-y-1" 
+                                       : "bg-[#0D1117] text-[#8B949E] border-[#30363d] hover:border-gray-500")" 
+                            @onclick="() => ToggleBit(bitIndex)">
+                        @(isActive ? "1" : "0")
+                    </button>
+                    
+                    <span class="text-[10px] font-mono mt-1 text-gray-600">b@(power)</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- REAL-TIME CONVERSION MONITOR HUD -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-5 shadow-lg">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#8B949E] block mb-1">DECIMAL (VALUE)</span>
+            <div class="text-3xl font-mono font-extrabold text-white truncate">@currentSum</div>
+            <span class="text-[10px] text-gray-500 font-mono mt-1 block">Base-10 integer</span>
+        </div>
+
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-5 shadow-lg">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#8B949E] block mb-1">HEXADECIMAL</span>
+            <div class="text-3xl font-mono font-extrabold text-[#00E5FF] truncate">0x@currentSum.ToString("X")</div>
+            <span class="text-[10px] text-gray-500 font-mono mt-1 block">Base-16 format</span>
+        </div>
+
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-5 shadow-lg">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#8B949E] block mb-1">RAW BINARY</span>
+            <div class="text-lg font-mono font-bold text-emerald-400 mt-2 tracking-widest truncate">@CurrentBinaryString</div>
+            <span class="text-[10px] text-gray-500 font-mono mt-1 block">@(bitWidth)-bit stream</span>
+        </div>
+
+        <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-5 shadow-lg">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#8B949E] block mb-1">ASCII / CHAR</span>
+            <div class="text-3xl font-mono font-extrabold text-amber-400 truncate">
+                @(currentSum >= 32 && currentSum <= 126 ? $"'{((char)currentSum)}'" : "N/A")
+            </div>
+            <span class="text-[10px] text-gray-500 font-mono mt-1 block">Printable 7-bit ASCII</span>
+        </div>
+    </div>
+
+    <!-- QUICK REFERENCE CHEAT SHEET FOOTER -->
+    <div class="mt-8 bg-[#161B22]/50 border border-[#30363d]/50 rounded-xl p-5">
+        <h4 class="text-xs font-bold uppercase text-[#8B949E] tracking-wider mb-2">QUICK TACTICAL REFERENCE:</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono text-gray-400">
+            <div>• Bit 0 is ALWAYS odd (1) or even (0).</div>
+            <div>• 4 bits = 1 Nibble (Max: 15).</div>
+            <div>• 8 bits = 1 Byte (Max: 255).</div>
+            <div>• Invert all bits + 1 = Two's Complement.</div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private int bitWidth = 8;
+    private bool[] bits = new bool[16];
+    private int? targetNumber = null;
+    private Random random = new();
+
+    private int currentSum
+    {
+        get
+        {
+            int sum = 0;
+            for (int i = 0; i < bitWidth; i++)
+            {
+                if (bits[i])
+                {
+                    sum += (1 << (bitWidth - 1 - i));
+                }
+            }
+            return sum;
+        }
+    }
+
+    private string CurrentBinaryString
+    {
+        get
+        {
+            var chars = new char[bitWidth];
+            for (int i = 0; i < bitWidth; i++)
+            {
+                chars[i] = bits[i] ? '1' : '0';
+            }
+            return new string(chars);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+        }
+    }
+
+    private void ToggleBit(int index)
+    {
+        bits[index] = !bits[index];
+    }
+
+    private void SetBitWidth(int width)
+    {
+        bitWidth = width;
+        ResetBits();
+        if (targetNumber.HasValue)
+        {
+            GenerateNewTarget();
+        }
+    }
+
+    private void ResetBits()
+    {
+        for (int i = 0; i < bits.Length; i++)
+        {
+            bits[i] = false;
+        }
+    }
+
+    private void GenerateNewTarget()
+    {
+        int max = (1 << bitWidth) - 1;
+        targetNumber = random.Next(1, max + 1);
+    }
+}

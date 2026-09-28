@@ -74,6 +74,11 @@
                 </button>
             }
             <button type="button" 
+                    class="py-3 px-1 font-bold text-sm tracking-wide transition-all duration-200 border-b-2 cursor-pointer text-[#8B949E] border-transparent hover:text-[#00E5FF]" 
+                    @onclick='() => Nav.NavigateTo("/sandbox")'>
+                🎮 Sandbox
+            </button>
+            <button type="button" 
                     class="py-3 px-1 font-bold text-sm tracking-wide transition-all duration-200 border-b-2 cursor-pointer
                            @(CurrentView == "feedback" ? "text-[#00E5FF] border-[#00E5FF]" : "text-[#8B949E] border-transparent hover:text-white")" 
                     @onclick='() => Nav.NavigateTo("dashboard?view=feedback")'>
