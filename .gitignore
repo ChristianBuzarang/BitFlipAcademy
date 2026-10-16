@@ -1,0 +1,10 @@
+# .NET build artifacts
+bin/
+obj/
+
+# Graphify output
+graphify-out/
+
+# User-specific settings
+appsettings.final.json
+appsettings.Development.json
