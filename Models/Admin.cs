@@ -1,14 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Supabase.Postgrest.Attributes;
+using Supabase.Postgrest.Models;
 
 namespace BitFlipBlazor.Models;
 
 [Table("tbladmin")]
-public class Admin
+public class Admin : BaseModel
 {
-    [Key, Column("aid")]
-    [ForeignKey("User")]
+    [PrimaryKey("aid", false)]
     public int Aid { get; set; }
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
 }

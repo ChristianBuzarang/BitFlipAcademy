@@ -1,25 +1,82 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Supabase.Postgrest.Attributes;
+using Supabase.Postgrest.Models;
 
 namespace BitFlipBlazor.Models;
 
-// Junction Tables (Required for EF Core many-to-many logic used in your SQL queries)
 [Table("tblsection_professor")]
-public class SectionProfessor { public int Sid { get; set; } public int Pid { get; set; } }
+public class SectionProfessor : BaseModel
+{
+    [Column("sid")]
+    public int Sid { get; set; }
+
+    [Column("pid")]
+    public int Pid { get; set; }
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+}
 
 [Table("tblsection_student")]
-public class SectionStudent { public int Sid { get; set; } public int Studid { get; set; } }
+public class SectionStudent : BaseModel
+{
+    [Column("sid")]
+    public int Sid { get; set; }
+
+    [Column("studid")]
+    public int Studid { get; set; }
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+}
 
 [Table("tblchallenge_section")]
-public class ChallengeSection { public int Cid { get; set; } public int Sid { get; set; } }
+public class ChallengeSection : BaseModel
+{
+    [Column("cid")]
+    public int Cid { get; set; }
+
+    [Column("sid")]
+    public int Sid { get; set; }
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+}
 
 [Table("tblstudent_record")]
-public class StudentRecord { public int Studid { get; set; } public int Srid { get; set; } }
+public class StudentRecord : BaseModel
+{
+    [Column("studid")]
+    public int Studid { get; set; }
+
+    [Column("srid")]
+    public int Srid { get; set; }
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+}
 
 [Table("tblchallenge_record")]
-public class ChallengeRecord { public int Cid { get; set; } public int Srid { get; set; } }
+public class ChallengeRecord : BaseModel
+{
+    [Column("cid")]
+    public int Cid { get; set; }
+
+    [Column("srid")]
+    public int Srid { get; set; }
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+}
 
 [Table("tblstudent_badge")]
-public class StudentBadge { public int Bid { get; set; } public int Studid { get; set; } }
+public class StudentBadge : BaseModel
+{
+    [Column("bid")]
+    public int Bid { get; set; }
+
+    [Column("studid")]
+    public int Studid { get; set; }
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+}

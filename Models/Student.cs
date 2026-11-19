@@ -1,15 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Supabase.Postgrest.Attributes;
+using Supabase.Postgrest.Models;
 
 namespace BitFlipBlazor.Models;
 
 [Table("tblstudent")]
-public class Student
+public class Student : BaseModel
 {
-    [Key, Column("studid")]
-    [ForeignKey("User")]
+    [PrimaryKey("studid", false)]
     public int StudId { get; set; }
-    [Column("rank")] public string Rank { get; set; } = "Novice";
+
+    [Column("rank")]
+    public string Rank { get; set; } = "Novice";
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
 }

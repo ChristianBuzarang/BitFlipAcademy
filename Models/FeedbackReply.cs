@@ -1,13 +1,12 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Supabase.Postgrest.Attributes;
+using Supabase.Postgrest.Models;
 
 namespace BitFlipBlazor.Models;
 
 [Table("tblfeedback_reply")]
-public class FeedbackReply
+public class FeedbackReply : BaseModel
 {
-    [Key]
-    [Column("reply_id")]
+    [PrimaryKey("reply_id", false)]
     public int ReplyId { get; set; }
 
     [Column("fbid")]
@@ -21,4 +20,7 @@ public class FeedbackReply
 
     [Column("date_replied")]
     public DateTime DateReplied { get; set; } = DateTime.UtcNow;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
 }
