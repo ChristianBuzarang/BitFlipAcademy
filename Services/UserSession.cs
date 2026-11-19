@@ -1,10 +1,16 @@
-using BitFlipBlazor.Data;
-using Microsoft.EntityFrameworkCore;
+using BitFlipBlazor.Models;
 
 namespace BitFlipBlazor.Services;
 
 public class UserSession
 {
+    private readonly Supabase.Client _db;
+
+    public UserSession(Supabase.Client db)
+    {
+        _db = db;
+    }
+
     public int Uid { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
@@ -31,17 +37,20 @@ public class UserSession
         Role = role;
     }
 
-    public async Task<bool> LoadInitialDataAsync(AppDbContext db)
+    public async Task<bool> LoadInitialDataAsync()
     {
         try
         {
             if (Role == "STUDENT")
             {
-                var student = await db.Students.FirstOrDefaultAsync(s => s.StudId == Uid);
+                var res = await _db.From<Student>()
+                    .Where(s => s.StudId == Uid)
+                    .Get();
+                var student = res.Models.FirstOrDefault();
                 Rank = student?.Rank ?? "Novice";
             }
 
-            await RefreshSectionsAsync(db);
+            await RefreshSectionsAsync();
             IsDataLoaded = true;
             return true;
         }
@@ -51,41 +60,39 @@ public class UserSession
         }
     }
 
-    public async Task RefreshSectionsAsync(AppDbContext db)
+    public async Task RefreshSectionsAsync()
     {
         var tempSections = new List<SectionState>();
-        using (var cmd = db.Database.GetDbConnection().CreateCommand())
+        var sectionIds = new List<int>();
+
+        if (Role == "PROFESSOR")
         {
-            await db.Database.OpenConnectionAsync();
-            if (Role == "PROFESSOR")
-            {
-                cmd.CommandText =
-                    "SELECT s.sid, s.section_name, s.section_password FROM tblsection s JOIN tblsection_professor sp ON s.sid = sp.sid WHERE sp.pid = @uid;";
-            }
-            else
-            {
-                cmd.CommandText =
-                    "SELECT s.sid, s.section_name, s.section_password FROM tblsection s JOIN tblsection_student ss ON s.sid = ss.sid WHERE ss.studid = @uid;";
-            }
+            var links = await _db.From<SectionProfessor>()
+                .Where(sp => sp.Pid == Uid)
+                .Get();
+            sectionIds = links.Models.Select(sp => sp.Sid).Distinct().ToList();
+        }
+        else
+        {
+            var links = await _db.From<SectionStudent>()
+                .Where(ss => ss.Studid == Uid)
+                .Get();
+            sectionIds = links.Models.Select(ss => ss.Sid).Distinct().ToList();
+        }
 
-            var pUid = cmd.CreateParameter();
-            pUid.ParameterName = "@uid";
-            pUid.Value = Uid;
-            cmd.Parameters.Add(pUid);
-
-            using (var reader = await cmd.ExecuteReaderAsync())
+        foreach (var sid in sectionIds)
+        {
+            var secRes = await _db.From<Section>()
+                .Where(s => s.Sid == sid)
+                .Get();
+            foreach (var sec in secRes.Models)
             {
-                while (await reader.ReadAsync())
+                tempSections.Add(new SectionState
                 {
-                    tempSections.Add(
-                        new SectionState
-                        {
-                            Sid = reader.GetInt32(0),
-                            SectionName = reader.GetString(1),
-                            SectionPassword = reader.GetString(2),
-                        }
-                    );
-                }
+                    Sid = sec.Sid,
+                    SectionName = sec.SectionName,
+                    SectionPassword = sec.SectionPassword
+                });
             }
         }
 
