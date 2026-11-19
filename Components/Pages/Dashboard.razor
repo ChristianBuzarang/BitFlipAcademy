@@ -1,9 +1,8 @@
 @page "/dashboard"
-@using Microsoft.EntityFrameworkCore
-@using BitFlipBlazor.Data
 @using BitFlipBlazor.Models
 @using BitFlipBlazor.Services
-@inject AppDbContext Db
+@using Supabase.Postgrest
+@inject Supabase.Client Db
 @inject UserSession Session
 @inject NavigationManager Nav
 
@@ -140,7 +139,6 @@
                 </div>
             </div>
 
-            <!-- Sub Filter Nav -->
             <div class="flex gap-3 mb-6">
                 @foreach (var f in new[] { "ALL", "STUDENT", "PROFESSOR", "ADMIN" })
                 {
@@ -297,7 +295,6 @@
                 <h2 class="text-xl font-bold text-white tracking-tight">@(currentSection?.SectionName ?? "Mission Hub")</h2>
             </div>
 
-            <!-- Sub Nav -->
             <div class="flex gap-3 mb-6">
                 @if (Session.Role == "PROFESSOR")
                 {
@@ -464,114 +461,105 @@
         }
     }
 
-    <!-- ========================================================================= -->
-    <!--                     DEBRIEFS / FEEDBACK HUB VIEW                         -->
-    <!-- ========================================================================= -->
+    <!-- DEBRIEFS / FEEDBACK HUB VIEW -->
     @if (CurrentView == "feedback")
-  {
-      <div class="flex justify-between items-center mb-6">
-          <div>
-             <h2 class="text-xl font-bold text-white tracking-tight">MISSION DEBRIEFS & DISCUSSION FORUM</h2>
-              <p class="text-xs text-[#8B949E] mt-1">Tactical analyses on completed section missions with community debrief discussion</p>
-          </div>
-          @if (Session.Role == "STUDENT")
-          {
-              <button type="button" 
-                      class="px-5 py-2.5 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer"
-                      @onclick="OpenFeedbackModal">
-                  + POST MISSION DEBRIEF
-              </button>
-          }
-      </div>
-
-      @if (!feedbackList.Any())
-      {
-        <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-12 text-center text-[#8B949E]">
-            No debriefs published yet for your section's missions.
+    {
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-white tracking-tight">MISSION DEBRIEFS & DISCUSSION FORUM</h2>
+                <p class="text-xs text-[#8B949E] mt-1">Tactical analyses on completed section missions with community debrief discussion</p>
+            </div>
+            @if (Session.Role == "STUDENT")
+            {
+                <button type="button" 
+                        class="px-5 py-2.5 bg-[#00E5FF] text-black font-bold uppercase tracking-wider text-xs rounded-lg transition-all duration-300 hover:bg-[#00f2ff] hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] active:scale-95 cursor-pointer"
+                        @onclick="OpenFeedbackModal">
+                    + POST MISSION DEBRIEF
+                </button>
+            }
         </div>
-      }
-      else
-      {
-          <div class="flex flex-col gap-6">
-              @foreach (var fb in feedbackList)
-              {
-                  <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-6 shadow-xl flex flex-col gap-4">
-                      <!-- Post Header: Mission Badge + Author + Rating -->
-                      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#30363d]/60 pb-4">
-                          <div>
-                              <div class="flex items-center gap-2 flex-wrap">
-                                  <!-- Section Indicator -->
-                                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                                      SECTION: @fb.SectionName
-                                  </span>
 
-                                  <!-- Mission & Target Info -->
-                                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40">
-                                      MISSION #@fb.Cid • @fb.Category
-                                  </span>
-                                  <span class="text-xs font-mono text-emerald-400">Target: @fb.TargetNumber</span>
-                              </div>
-                              <h3 class="text-base font-bold text-white mt-1">Operative: @fb.AuthorName</h3>
-                          </div>
-                          <div class="flex items-center text-lg select-none">
-                              @for (int i = 1; i <= 5; i++)
-                              {
-                                  <span style="color: @(i <= fb.Rating ? "#f59e0b" : "#30363d"); font-size: 1.25rem;">★</span>
-                              }
-                          </div>
-                      </div>
+        @if (!feedbackList.Any())
+        {
+            <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-12 text-center text-[#8B949E]">
+                No debriefs published yet for your section's missions.
+            </div>
+        }
+        else
+        {
+            <div class="flex flex-col gap-6">
+                @foreach (var fb in feedbackList)
+                {
+                    <div class="bg-[#161B22] border border-[#30363d] rounded-xl p-6 shadow-xl flex flex-col gap-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#30363d]/60 pb-4">
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                        SECTION: @fb.SectionName
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40">
+                                        MISSION #@fb.Cid • @fb.Category
+                                    </span>
+                                    <span class="text-xs font-mono text-emerald-400">Target: @fb.TargetNumber</span>
+                                </div>
+                                <h3 class="text-base font-bold text-white mt-1">Operative: @fb.AuthorName</h3>
+                            </div>
+                            <div class="flex items-center text-lg select-none">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span style="color: @(i <= fb.Rating ? "#f59e0b" : "#30363d"); font-size: 1.25rem;">★</span>
+                                }
+                            </div>
+                        </div>
 
-                      <!-- Post Body: Operative Feedback -->
-                      <p class="text-sm text-gray-200 bg-[#0D1117]/80 border border-[#30363d]/60 rounded-lg p-4 font-mono leading-relaxed">
-                          "@fb.Comment"
-                      </p>
+                        <p class="text-sm text-gray-200 bg-[#0D1117]/80 border border-[#30363d]/60 rounded-lg p-4 font-mono leading-relaxed">
+                            "@fb.Comment"
+                        </p>
 
-                      <div class="text-[11px] text-[#8B949E] font-mono">
-                          LOGGED: @fb.DateSubmitted.ToString("yyyy-MM-dd HH:mm")
-                      </div>
+                        <div class="text-[11px] text-[#8B949E] font-mono">
+                            LOGGED: @fb.DateSubmitted.ToString("yyyy-MM-dd HH:mm")
+                        </div>
 
-                      <!-- Comments / Threaded Discussion Section -->
-                      <div class="mt-2 pt-4 border-t border-[#30363d]/50">
-                          <p class="text-xs font-bold text-[#8B949E] tracking-wider uppercase mb-3">
-                              Discussion (@fb.Replies.Count)
-                          </p>
+                        <div class="mt-2 pt-4 border-t border-[#30363d]/50">
+                            <p class="text-xs font-bold text-[#8B949E] tracking-wider uppercase mb-3">
+                                Discussion (@fb.Replies.Count)
+                            </p>
 
-                          @if (fb.Replies.Any())
-                          {
-                              <div class="flex flex-col gap-2.5 mb-4">
-                                  @foreach (var reply in fb.Replies)
-                                  {
-                                      <div class="bg-[#0D1117] border border-[#30363d]/40 rounded-lg p-3 text-xs">
-                                          <div class="flex justify-between items-center mb-1">
-                                              <span class="font-bold text-[#00E5FF]">@reply.UserName</span>
-                                              <span class="text-[10px] text-[#8B949E] font-mono">@reply.DateReplied.ToString("MM-dd HH:mm")</span>
-                                          </div>
-                                          <p class="text-gray-300 font-mono">@reply.ReplyText</p>
-                                      </div>
-                                  }
-                              </div>
-                          }
+                            @if (fb.Replies.Any())
+                            {
+                                <div class="flex flex-col gap-2.5 mb-4">
+                                    @foreach (var reply in fb.Replies)
+                                    {
+                                        <div class="bg-[#0D1117] border border-[#30363d]/40 rounded-lg p-3 text-xs">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="font-bold text-[#00E5FF]">@reply.UserName</span>
+                                                <span class="text-[10px] text-[#8B949E] font-mono">@reply.DateReplied.ToString("MM-dd HH:mm")</span>
+                                            </div>
+                                            <p class="text-gray-300 font-mono">@reply.ReplyText</p>
+                                        </div>
+                                    }
+                                </div>
+                            }
 
-                          <!-- Add Comment Bar -->
-                          <div class="flex gap-2">
-                              <input type="text" 
-                                     class="flex-grow bg-[#0D1117] border border-[#30363d] rounded-lg px-4 py-2 text-xs text-white outline-none focus:border-[#00E5FF] font-mono placeholder:text-gray-600"
-                                     placeholder="Add debrief comment or strategy tip..."
-                                     @bind="replyInputs[fb.Fbid]"
-                                     @onkeydown="@(async e => { if (e.Key == "Enter") await SubmitReply(fb.Fbid); })" />
+                            <div class="flex gap-2">
+                                <input type="text" 
+                                       class="flex-grow bg-[#0D1117] border border-[#30363d] rounded-lg px-4 py-2 text-xs text-white outline-none focus:border-[#00E5FF] font-mono placeholder:text-gray-600"
+                                       placeholder="Add debrief comment or strategy tip..."
+                                       @bind="replyInputs[fb.Fbid]"
+                                       @onkeydown="@(async e => { if (e.Key == "Enter") await SubmitReply(fb.Fbid); })" />
 
-                              <button type="button" 
-                                      class="px-4 py-2 bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40 text-xs font-bold rounded-lg hover:bg-[#00E5FF] hover:text-black transition-all active:scale-95 cursor-pointer whitespace-nowrap"
-                                      @onclick="() => SubmitReply(fb.Fbid)">
-                                  REPLY
-                              </button>
-                          </div>
-                      </div>
-                  </div>
-              }
-          </div>
-      }
-  }
+                                <button type="button" 
+                                        class="px-4 py-2 bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40 text-xs font-bold rounded-lg hover:bg-[#00E5FF] hover:text-black transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                                        @onclick="() => SubmitReply(fb.Fbid)">
+                                    REPLY
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
 </div>
 
 <!-- MODAL: POST REVIEW & RATING (STUDENT) -->
@@ -777,12 +765,10 @@
     private bool showAddMissionModal = false;
     private string modalError = "";
 
-    // Admin metrics
     private int totalUsers = 0;
     private int totalStudents = 0;
     private int globalSuccessRate = 0;
 
-    // Form fields
     private string newSectionName = "";
     private string newSectionPass = "";
     private string joinCode = "";
@@ -874,7 +860,7 @@
     private List<RosterDto> sectionRoster = new();
     private List<FeedbackDto> feedbackList = new();
     private List<AnsweredMissionDto> reviewableMissions = new();
-    
+
     private UserSession.SectionState? currentSection;
     private int? lastLoadedSid;
     private string? lastSubView;
@@ -910,7 +896,7 @@
         if (CurrentView == "feedback")
         {
             await LoadFeedbacks();
-            return; 
+            return;
         }
 
         if (Sid.HasValue && (lastLoadedSid != Sid.Value || lastSubView != SubView))
@@ -931,39 +917,58 @@
         newComment = "";
         newRating = 5;
         selectedFeedbackCid = 0;
-
-        // Fetch ONLY missions the student has answered from enrolled sections
         reviewableMissions.Clear();
-        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+
+        var studentSecRes = await Db.From<SectionStudent>()
+            .Where(ss => ss.Studid == Session.Uid && ss.DeletedAt == null)
+            .Get();
+        var enrolledSids = studentSecRes.Models.Select(ss => ss.Sid).Distinct().ToList();
+
+        var studentRecRes = await Db.From<StudentRecord>()
+            .Where(sr => sr.Studid == Session.Uid && sr.DeletedAt == null)
+            .Get();
+        var answeredSrids = studentRecRes.Models.Select(sr => sr.Srid).Distinct().ToHashSet();
+
+        var answeredCids = new HashSet<int>();
+        if (answeredSrids.Count > 0)
         {
-            await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = @"
-                SELECT DISTINCT c.cid, c.category, c.target_number
-                FROM tblchallenge c
-                JOIN tblchallenge_section cs ON c.cid = cs.cid
-                JOIN tblsection_student ss ON cs.sid = ss.sid
-                JOIN tblchallenge_record cr ON c.cid = cr.cid
-                JOIN tblstudent_record sr ON cr.srid = sr.srid
-                WHERE ss.studid = @uid AND sr.studid = @uid
-                ORDER BY c.cid DESC;";
-
-            var pUid = cmd.CreateParameter();
-            pUid.ParameterName = "@uid";
-            pUid.Value = Session.Uid;
-            cmd.Parameters.Add(pUid);
-
-            using (var reader = await cmd.ExecuteReaderAsync())
+            var allChRecRes = await Db.From<ChallengeRecord>()
+                .Where(cr => cr.DeletedAt == null)
+                .Get();
+            foreach (var cr in allChRecRes.Models.Where(cr => answeredSrids.Contains(cr.Srid)))
             {
-                while (await reader.ReadAsync())
-                {
-                    reviewableMissions.Add(new AnsweredMissionDto
-                    {
-                        Cid = reader.GetInt32(0),
-                        Category = reader.GetString(1),
-                        TargetNumber = reader.GetInt32(2)
-                    });
-                }
+                answeredCids.Add(cr.Cid);
             }
+        }
+
+        var availableCids = new HashSet<int>();
+        if (enrolledSids.Count > 0)
+        {
+            var allChSecRes = await Db.From<ChallengeSection>()
+                .Where(cs => cs.DeletedAt == null)
+                .Get();
+            foreach (var cs in allChSecRes.Models.Where(cs => enrolledSids.Contains(cs.Sid) && answeredCids.Contains(cs.Cid)))
+            {
+                availableCids.Add(cs.Cid);
+            }
+        }
+
+        if (availableCids.Count > 0)
+        {
+            var chRes = await Db.From<Challenge>()
+                .Where(c => c.DeletedAt == null)
+                .Order(c => c.Cid, Constants.Ordering.Descending)
+                .Get();
+
+            reviewableMissions = chRes.Models
+                .Where(c => availableCids.Contains(c.Cid))
+                .Select(c => new AnsweredMissionDto
+                {
+                    Cid = c.Cid,
+                    Category = c.Category,
+                    TargetNumber = c.TargetNumber
+                })
+                .ToList();
         }
 
         showFeedbackModal = true;
@@ -971,13 +976,23 @@
 
     private async Task LoadAdminData()
     {
-        usersList = await Db.Users.Where(u => u.IsActive == 1).ToListAsync();
-        archivedUsersList = await Db.Users.Where(u => u.IsActive == 0).ToListAsync();
+        var activeRes = await Db.From<User>()
+            .Where(u => u.IsActive == 1 && u.DeletedAt == null)
+            .Get();
+        var archivedRes = await Db.From<User>()
+            .Where(u => u.IsActive == 0 && u.DeletedAt == null)
+            .Get();
+
+        usersList = activeRes.Models;
+        archivedUsersList = archivedRes.Models;
         totalUsers = usersList.Count;
         totalStudents = usersList.Count(u => u.Role == "STUDENT");
 
-        var totalRecords = await Db.ScoreRecords.CountAsync();
-        var passedRecords = await Db.ScoreRecords.CountAsync(r => r.IsPassed == 1);
+        var scoresRes = await Db.From<ScoreRecord>()
+            .Where(r => r.DeletedAt == null)
+            .Get();
+        var totalRecords = scoresRes.Models.Count;
+        var passedRecords = scoresRes.Models.Count(r => r.IsPassed == 1);
         globalSuccessRate = totalRecords > 0 ? (int)Math.Round(((double)passedRecords / totalRecords) * 100) : 0;
     }
 
@@ -989,43 +1004,87 @@
 
         if (SubView == "ongoing" || SubView == "completed")
         {
+            var chSecRes = await Db.From<ChallengeSection>()
+                .Where(cs => cs.Sid == Sid.Value && cs.DeletedAt == null)
+                .Get();
+            var sectionCids = chSecRes.Models.Select(cs => cs.Cid).Distinct().ToHashSet();
+
+            var allChRes = await Db.From<Challenge>()
+                .Where(c => c.DeletedAt == null)
+                .Order(c => c.Cid, Constants.Ordering.Descending)
+                .Get();
+            var sectionChallenges = allChRes.Models.Where(c => sectionCids.Contains(c.Cid)).ToList();
+
             var tempMissions = new List<MissionDto>();
-            using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+
+            if (Session.Role == "PROFESSOR")
             {
-                await Db.Database.OpenConnectionAsync();
-                if (Session.Role == "PROFESSOR")
+                tempMissions = sectionChallenges.Select(c => new MissionDto
                 {
-                    cmd.CommandText = "SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid WHERE cs.sid = @sid ORDER BY c.cid DESC;";
-                }
-                else if (SubView == "ongoing")
+                    Cid = c.Cid,
+                    Category = c.Category,
+                    TargetNumber = c.TargetNumber,
+                    TimeLimit = c.TimeLimit,
+                    DifficultyLevel = c.DifficultyLevel
+                }).ToList();
+            }
+            else
+            {
+                var studRecRes = await Db.From<StudentRecord>()
+                    .Where(sr => sr.Studid == Session.Uid && sr.DeletedAt == null)
+                    .Get();
+                var studSrids = studRecRes.Models.Select(sr => sr.Srid).Distinct().ToHashSet();
+
+                var chRecRes = await Db.From<ChallengeRecord>()
+                    .Where(cr => cr.DeletedAt == null)
+                    .Get();
+                var completedByCid = chRecRes.Models
+                    .Where(cr => studSrids.Contains(cr.Srid) && sectionCids.Contains(cr.Cid))
+                    .GroupBy(cr => cr.Cid)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.Srid).ToList());
+
+                if (SubView == "ongoing")
                 {
-                    cmd.CommandText = "SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid WHERE cs.sid = @sid AND c.cid NOT IN (SELECT cr.cid FROM tblchallenge_record cr JOIN tblstudent_record sr ON cr.srid = sr.srid WHERE sr.studid = @uid) ORDER BY c.cid DESC;";
+                    tempMissions = sectionChallenges
+                        .Where(c => !completedByCid.ContainsKey(c.Cid))
+                        .Select(c => new MissionDto
+                        {
+                            Cid = c.Cid,
+                            Category = c.Category,
+                            TargetNumber = c.TargetNumber,
+                            TimeLimit = c.TimeLimit,
+                            DifficultyLevel = c.DifficultyLevel
+                        })
+                        .ToList();
                 }
                 else
                 {
-                    cmd.CommandText = "SELECT c.cid, c.category, c.target_number, c.time_limit, c.difficulty_level, r.final_score, r.time_taken FROM tblchallenge c JOIN tblchallenge_section cs ON c.cid = cs.cid JOIN tblchallenge_record cr ON c.cid = cr.cid JOIN tblstudent_record sr ON cr.srid = sr.srid JOIN tblscorerecord r ON sr.srid = r.srid WHERE cs.sid = @sid AND sr.studid = @uid ORDER BY r.date_completed DESC;";
-                }
+                    var scoresRes = await Db.From<ScoreRecord>()
+                        .Where(r => r.DeletedAt == null)
+                        .Get();
+                    var scoreBySrid = scoresRes.Models.ToDictionary(r => r.Srid);
 
-                var pSid = cmd.CreateParameter(); pSid.ParameterName = "@sid"; pSid.Value = Sid.Value; cmd.Parameters.Add(pSid);
-                var pUid = cmd.CreateParameter(); pUid.ParameterName = "@uid"; pUid.Value = Session.Uid; cmd.Parameters.Add(pUid);
-
-                using (var reader = await cmd.ExecuteReaderAsync())
-                {
-                    while (await reader.ReadAsync())
+                    foreach (var c in sectionChallenges.Where(c => completedByCid.ContainsKey(c.Cid)))
                     {
+                        var latestScore = completedByCid[c.Cid]
+                            .Where(srid => scoreBySrid.ContainsKey(srid))
+                            .Select(srid => scoreBySrid[srid])
+                            .OrderByDescending(r => r.DateCompleted)
+                            .FirstOrDefault();
+
                         var m = new MissionDto
                         {
-                            Cid = reader.GetInt32(0),
-                            Category = reader.GetString(1),
-                            TargetNumber = reader.GetInt32(2),
-                            TimeLimit = reader.GetInt32(3),
-                            DifficultyLevel = reader.GetString(4)
+                            Cid = c.Cid,
+                            Category = c.Category,
+                            TargetNumber = c.TargetNumber,
+                            TimeLimit = c.TimeLimit,
+                            DifficultyLevel = c.DifficultyLevel
                         };
 
-                        if (SubView == "completed")
+                        if (latestScore is not null)
                         {
-                            m.FinalScore = reader.GetInt32(5);
-                            int seconds = reader.GetInt32(6);
+                            m.FinalScore = latestScore.FinalScore;
+                            int seconds = latestScore.TimeTaken;
                             m.DisplayTime = $"{(seconds / 60):D2}:{(seconds % 60):D2}";
                             m.DisplayRank = m.FinalScore >= 350 ? "S" : (m.FinalScore >= 200 ? "A" : "B");
                         }
@@ -1034,163 +1093,167 @@
                     }
                 }
             }
+
             missionsList = tempMissions;
         }
         else if (SubView == "roster" && Session.Role == "PROFESSOR")
         {
-            var tempRoster = new List<RosterDto>();
-            using (var cmd = Db.Database.GetDbConnection().CreateCommand())
-            {
-                await Db.Database.OpenConnectionAsync();
-                cmd.CommandText = "SELECT u.uid, u.name, s.rank FROM tbluser u JOIN tblstudent s ON u.uid = s.studid JOIN tblsection_student ss ON s.studid = ss.studid WHERE ss.sid = @sid AND u.is_active = 1;";
-                var pSid = cmd.CreateParameter(); pSid.ParameterName = "@sid"; pSid.Value = Sid.Value; cmd.Parameters.Add(pSid);
+            var secStudRes = await Db.From<SectionStudent>()
+                .Where(ss => ss.Sid == Sid.Value && ss.DeletedAt == null)
+                .Get();
+            var enrolledStudIds = secStudRes.Models.Select(ss => ss.Studid).Distinct().ToHashSet();
 
-                using (var reader = await cmd.ExecuteReaderAsync())
+            var usersRes = await Db.From<User>()
+                .Where(u => u.IsActive == 1 && u.DeletedAt == null)
+                .Get();
+            var studentsRes = await Db.From<Student>()
+                .Where(s => s.DeletedAt == null)
+                .Get();
+            var rankByStudId = studentsRes.Models.ToDictionary(s => s.StudId, s => s.Rank);
+
+            sectionRoster = usersRes.Models
+                .Where(u => enrolledStudIds.Contains(u.Uid))
+                .Select(u => new RosterDto
                 {
-                    while (await reader.ReadAsync())
-                    {
-                        tempRoster.Add(new RosterDto
-                        {
-                            Uid = reader.GetInt32(0),
-                            Name = reader.GetString(1),
-                            Rank = reader.IsDBNull(2) ? "Novice" : reader.GetString(2)
-                        });
-                    }
-                }
-            }
-            sectionRoster = tempRoster;
+                    Uid = u.Uid,
+                    Name = u.Name,
+                    Rank = rankByStudId.TryGetValue(u.Uid, out var rank) && !string.IsNullOrWhiteSpace(rank) ? rank : "Novice"
+                })
+                .ToList();
         }
     }
 
     private async Task LoadBadges()
     {
-        var tempBadges = new List<BadgeDto>();
-        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
-        {
-            await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = "SELECT b.badgename, b.criteriaMet FROM tblbadge b JOIN tblstudent_badge sb ON b.bid = sb.bid WHERE sb.studid = @uid;";
-            var pUid = cmd.CreateParameter(); pUid.ParameterName = "@uid"; pUid.Value = Session.Uid; cmd.Parameters.Add(pUid);
+        var sbRes = await Db.From<StudentBadge>()
+            .Where(sb => sb.Studid == Session.Uid && sb.DeletedAt == null)
+            .Get();
+        var badgeIds = sbRes.Models.Select(sb => sb.Bid).Distinct().ToHashSet();
 
-            using (var reader = await cmd.ExecuteReaderAsync())
-            {
-                while (await reader.ReadAsync())
-                {
-                    tempBadges.Add(new BadgeDto
-                    {
-                        Name = reader.GetString(0),
-                        Criteria = reader.GetString(1)
-                    });
-                }
-            }
+        if (badgeIds.Count == 0)
+        {
+            studentBadges = new();
+            return;
         }
-        studentBadges = tempBadges;
+
+        var badgesRes = await Db.From<Badge>()
+            .Where(b => b.DeletedAt == null)
+            .Get();
+
+        studentBadges = badgesRes.Models
+            .Where(b => badgeIds.Contains(b.Bid))
+            .Select(b => new BadgeDto
+            {
+                Name = b.BadgeName,
+                Criteria = b.CriteriaMet
+            })
+            .ToList();
     }
 
     private async Task LoadFeedbacks()
     {
-        var tempFeedbacks = new List<FeedbackDto>();
-        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+        var fbRes = await Db.From<ChallengeFeedback>()
+            .Where(f => f.DeletedAt == null)
+            .Order(f => f.DateSubmitted, Constants.Ordering.Descending)
+            .Get();
+
+        var challengesRes = await Db.From<Challenge>()
+            .Where(c => c.DeletedAt == null)
+            .Get();
+        var challengeMap = challengesRes.Models.ToDictionary(c => c.Cid);
+
+        var usersRes = await Db.From<User>()
+            .Where(u => u.DeletedAt == null)
+            .Get();
+        var userMap = usersRes.Models.ToDictionary(u => u.Uid);
+
+        var chSecRes = await Db.From<ChallengeSection>()
+            .Where(cs => cs.DeletedAt == null)
+            .Get();
+        var sectionsRes = await Db.From<Section>()
+            .Where(s => s.DeletedAt == null)
+            .Get();
+        var sectionMap = sectionsRes.Models.ToDictionary(s => s.Sid);
+
+        HashSet<int>? allowedSids = null;
+        if (Session.Role != "ADMIN")
         {
-            await Db.Database.OpenConnectionAsync();
-            
-            // Scope debriefs: Admin sees all; Students/Professors see posts for their sections
-            if (Session.Role == "ADMIN")
-            {
-                cmd.CommandText = @"
-                    SELECT f.fbid, f.cid, COALESCE(sec.section_name, 'Global') AS section_name,
-                            c.category, c.target_number, u.name, f.rating, f.comment_text, f.date_submitted
-                    FROM tblchallenge_feedback f
-                    JOIN tblchallenge c ON f.cid = c.cid
-                    LEFT JOIN tblchallenge_section cs ON c.cid = cs.cid
-                    LEFT JOIN tblsection sec ON cs.sid = sec.sid
-                    JOIN tbluser u ON f.studid = u.uid
-                    ORDER BY f.date_submitted DESC;";
-            }
-            else
-            {
-                cmd.CommandText = @"
-                    SELECT DISTINCT f.fbid, f.cid, sec.section_name,
-                            c.category, c.target_number, u.name, f.rating, f.comment_text, f.date_submitted
-                    FROM tblchallenge_feedback f
-                    JOIN tblchallenge c ON f.cid = c.cid
-                    JOIN tblchallenge_section cs ON c.cid = cs.cid
-                    JOIN tblsection sec ON cs.sid = sec.sid
-                    JOIN tbluser u ON f.studid = u.uid
-                    WHERE cs.sid IN (
-                        SELECT sid FROM tblsection_student WHERE studid = @uid
-                        UNION
-                        SELECT sid FROM tblsection_professor WHERE pid = @uid
-                    )
-                    ORDER BY f.date_submitted DESC;";
+            var studSecs = await Db.From<SectionStudent>()
+                .Where(ss => ss.Studid == Session.Uid && ss.DeletedAt == null)
+                .Get();
+            var profSecs = await Db.From<SectionProfessor>()
+                .Where(sp => sp.Pid == Session.Uid && sp.DeletedAt == null)
+                .Get();
 
-                var pUid = cmd.CreateParameter();
-                pUid.ParameterName = "@uid";
-                pUid.Value = Session.Uid;
-                cmd.Parameters.Add(pUid);
-            }
-
-            using (var reader = await cmd.ExecuteReaderAsync())
-            {
-                while (await reader.ReadAsync())
-                {
-                    tempFeedbacks.Add(new FeedbackDto
-                    {
-                        Fbid = reader.GetInt32(0),
-                        Cid = reader.GetInt32(1),
-                        SectionName = reader.GetString(2),
-                        Category = reader.GetString(3),
-                        TargetNumber = reader.GetInt32(4),
-                        AuthorName = reader.GetString(5),
-                        Rating = reader.GetInt32(6),
-                        Comment = reader.GetString(7),
-                        DateSubmitted = reader.GetDateTime(8)
-                    });
-                }
-            }
+            allowedSids = studSecs.Models.Select(x => x.Sid)
+                .Concat(profSecs.Models.Select(x => x.Sid))
+                .ToHashSet();
         }
 
-        // Fetch replies for each post
-        foreach (var fb in tempFeedbacks)
+        var repliesRes = await Db.From<FeedbackReply>()
+            .Where(r => r.DeletedAt == null)
+            .Order(r => r.DateReplied, Constants.Ordering.Ascending)
+            .Get();
+
+        var tempFeedbacks = new List<FeedbackDto>();
+
+        foreach (var f in fbRes.Models)
         {
-            if (!replyInputs.ContainsKey(fb.Fbid))
+            var matchingSids = chSecRes.Models
+                .Where(cs => cs.Cid == f.Cid && sectionMap.ContainsKey(cs.Sid))
+                .Select(cs => cs.Sid)
+                .Distinct()
+                .ToList();
+
+            if (Session.Role != "ADMIN" && allowedSids is not null)
             {
-                replyInputs[fb.Fbid] = "";
-            }
-
-            using (var cmd = Db.Database.GetDbConnection().CreateCommand())
-            {
-                await Db.Database.OpenConnectionAsync();
-                cmd.CommandText = @"
-                    SELECT r.reply_id, u.name, r.reply_text, r.date_replied
-                    FROM tblfeedback_reply r
-                    JOIN tbluser u ON r.uid = u.uid
-                    WHERE r.fbid = @fbid
-                    ORDER BY r.date_replied ASC;";
-
-                var pFbid = cmd.CreateParameter();
-                pFbid.ParameterName = "@fbid";
-                pFbid.Value = fb.Fbid;
-                cmd.Parameters.Add(pFbid);
-
-                using (var reader = await cmd.ExecuteReaderAsync())
+                if (!matchingSids.Any(sid => allowedSids.Contains(sid)))
                 {
-                    while (await reader.ReadAsync())
-                    {
-                        fb.Replies.Add(new ReplyDto
-                        {
-                            ReplyId = reader.GetInt32(0),
-                            UserName = reader.GetString(1),
-                            ReplyText = reader.GetString(2),
-                            DateReplied = reader.GetDateTime(3)
-                        });
-                    }
+                    continue;
                 }
             }
+
+            var secName = matchingSids.Count > 0
+                ? string.Join(", ", matchingSids.Select(sid => sectionMap[sid].SectionName))
+                : "Global";
+
+            challengeMap.TryGetValue(f.Cid, out var ch);
+            userMap.TryGetValue(f.StudId, out var author);
+
+            var fbReplies = repliesRes.Models
+                .Where(r => r.Fbid == f.Fbid)
+                .Select(r => new ReplyDto
+                {
+                    ReplyId = r.ReplyId,
+                    UserName = userMap.TryGetValue(r.Uid, out var ru) ? ru.Name : $"User #{r.Uid}",
+                    ReplyText = r.ReplyText,
+                    DateReplied = r.DateReplied
+                })
+                .ToList();
+
+            if (!replyInputs.ContainsKey(f.Fbid))
+            {
+                replyInputs[f.Fbid] = "";
+            }
+
+            tempFeedbacks.Add(new FeedbackDto
+            {
+                Fbid = f.Fbid,
+                Cid = f.Cid,
+                SectionName = secName,
+                Category = ch?.Category ?? "Binary",
+                TargetNumber = ch?.TargetNumber ?? 0,
+                AuthorName = author?.Name ?? $"Operative #{f.StudId}",
+                Rating = f.Rating,
+                Comment = f.CommentText,
+                DateSubmitted = f.DateSubmitted,
+                Replies = fbReplies
+            });
         }
 
         feedbackList = tempFeedbacks;
     }
-    
+
     private async Task SubmitFeedback()
     {
         feedbackError = "";
@@ -1217,8 +1280,7 @@
                 DateSubmitted = DateTime.UtcNow
             };
 
-            Db.ChallengeFeedbacks.Add(feedback);
-            await Db.SaveChangesAsync();
+            await Db.From<ChallengeFeedback>().Insert(feedback);
 
             showFeedbackModal = false;
             newComment = "";
@@ -1249,8 +1311,7 @@
                 DateReplied = DateTime.UtcNow
             };
 
-            Db.FeedbackReplies.Add(reply);
-            await Db.SaveChangesAsync();
+            await Db.From<FeedbackReply>().Insert(reply);
 
             replyInputs[fbid] = "";
             await LoadFeedbacks();
@@ -1269,13 +1330,12 @@
 
     private async Task ToggleUserStatus(int uid, int activeStatus)
     {
-        var target = await Db.Users.FindAsync(uid);
-        if (target != null)
-        {
-            target.IsActive = activeStatus;
-            await Db.SaveChangesAsync();
-            await LoadAdminData();
-        }
+        await Db.From<User>()
+            .Where(u => u.Uid == uid)
+            .Set(u => u.IsActive, activeStatus)
+            .Update();
+
+        await LoadAdminData();
     }
 
     private async Task AdminCreateUser()
@@ -1287,8 +1347,12 @@
             return;
         }
 
-        var exists = await Db.Users.AnyAsync(u => u.Email.ToLower() == adminNewEmail.Trim().ToLower());
-        if (exists)
+        var normalizedEmail = adminNewEmail.Trim().ToLower();
+        var existingRes = await Db.From<User>()
+            .Where(u => u.Email == normalizedEmail && u.DeletedAt == null)
+            .Get();
+
+        if (existingRes.Models.Any())
         {
             adminModalError = "An agent with this email already exists.";
             return;
@@ -1297,24 +1361,23 @@
         var newUser = new User
         {
             Name = adminNewName.Trim(),
-            Email = adminNewEmail.Trim().ToLower(),
+            Email = normalizedEmail,
             Password = adminNewPass,
             Role = adminNewRole,
             IsActive = 1
         };
 
-        Db.Users.Add(newUser);
-        await Db.SaveChangesAsync();
+        var insertedUserRes = await Db.From<User>().Insert(newUser);
+        var createdUser = insertedUserRes.Models.FirstOrDefault() ?? newUser;
 
-        if (adminNewRole == "STUDENT")
+        if (adminNewRole == "STUDENT" && createdUser.Uid > 0)
         {
             var newStudent = new Student
             {
-                StudId = newUser.Uid,
+                StudId = createdUser.Uid,
                 Rank = "Novice"
             };
-            Db.Students.Add(newStudent);
-            await Db.SaveChangesAsync();
+            await Db.From<Student>().Insert(newStudent);
         }
 
         showAdminCreateModal = false;
@@ -1328,28 +1391,30 @@
     {
         if (string.IsNullOrWhiteSpace(newSectionName) || string.IsNullOrWhiteSpace(newSectionPass)) return;
 
-        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+        var sec = new Section
         {
-            await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = $"INSERT INTO tblsection (section_name, semester, year, section_password) VALUES (@name, '1st', '2026', @pass) RETURNING sid;";
-            
-            var pName = cmd.CreateParameter(); pName.ParameterName = "@name"; pName.Value = newSectionName; cmd.Parameters.Add(pName);
-            var pPass = cmd.CreateParameter(); pPass.ParameterName = "@pass"; pPass.Value = newSectionPass; cmd.Parameters.Add(pPass);
+            SectionName = newSectionName.Trim(),
+            Semester = "1st",
+            Year = "2026",
+            SectionPassword = newSectionPass.Trim()
+        };
 
-            var newSid = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        var insertedSecRes = await Db.From<Section>().Insert(sec);
+        var createdSec = insertedSecRes.Models.FirstOrDefault() ?? sec;
 
-            cmd.Parameters.Clear();
-            cmd.CommandText = $"INSERT INTO tblsection_professor (sid, pid) VALUES (@sid, @pid);";
-            var pSid = cmd.CreateParameter(); pSid.ParameterName = "@sid"; pSid.Value = newSid; cmd.Parameters.Add(pSid);
-            var pPid = cmd.CreateParameter(); pPid.ParameterName = "@pid"; pPid.Value = Session.Uid; cmd.Parameters.Add(pPid);
-            
-            await cmd.ExecuteNonQueryAsync();
+        if (createdSec.Sid > 0)
+        {
+            await Db.From<SectionProfessor>().Insert(new SectionProfessor
+            {
+                Sid = createdSec.Sid,
+                Pid = Session.Uid
+            });
         }
 
         showActionModal = false;
         newSectionName = "";
         newSectionPass = "";
-        await Session.RefreshSectionsAsync(Db); // Updates in-memory session
+        await Session.RefreshSectionsAsync();
     }
 
     private async Task JoinSection()
@@ -1357,30 +1422,34 @@
         modalError = "";
         if (string.IsNullOrWhiteSpace(joinCode)) return;
 
-        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+        var code = joinCode.Trim();
+        var secRes = await Db.From<Section>()
+            .Where(s => s.SectionPassword == code && s.DeletedAt == null)
+            .Get();
+        var targetSec = secRes.Models.FirstOrDefault();
+
+        if (targetSec is not null)
         {
-            await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = $"SELECT sid FROM tblsection WHERE section_password = @code;";
-            var pCode = cmd.CreateParameter();
-            pCode.ParameterName = "@code";
-            pCode.Value = joinCode.Trim();
-            cmd.Parameters.Add(pCode);
-            var result = await cmd.ExecuteScalarAsync();
+            var existingLink = await Db.From<SectionStudent>()
+                .Where(ss => ss.Sid == targetSec.Sid && ss.Studid == Session.Uid && ss.DeletedAt == null)
+                .Get();
 
-            if (result != null)
+            if (!existingLink.Models.Any())
             {
-                int sid = Convert.ToInt32(result);
-                cmd.CommandText = $"INSERT INTO tblsection_student (sid, studid) VALUES ({sid}, {Session.Uid}) ON CONFLICT DO NOTHING;";
-                await cmd.ExecuteNonQueryAsync();
+                await Db.From<SectionStudent>().Insert(new SectionStudent
+                {
+                    Sid = targetSec.Sid,
+                    Studid = Session.Uid
+                });
+            }
 
-                showActionModal = false;
-                joinCode = "";
-                await Session.RefreshSectionsAsync(Db); // Updates in-memory session
-            }
-            else
-            {
-                modalError = "Invalid class code.";
-            }
+            showActionModal = false;
+            joinCode = "";
+            await Session.RefreshSectionsAsync();
+        }
+        else
+        {
+            modalError = "Invalid class code.";
         }
     }
 
@@ -1388,18 +1457,29 @@
     {
         if (!Sid.HasValue) return;
 
-        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+        var ch = new Challenge
         {
-            await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = $"INSERT INTO tblchallenge (category, target_number, time_limit, difficulty_level) VALUES ('{newMissionCategory}', {newMissionTarget}, {newMissionTime}, '{newMissionDiff}') RETURNING cid;";
-            var newCid = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+            Category = newMissionCategory,
+            TargetNumber = newMissionTarget,
+            TimeLimit = newMissionTime,
+            DifficultyLevel = newMissionDiff
+        };
 
-            cmd.CommandText = $"INSERT INTO tblchallenge_section (cid, sid) VALUES ({newCid}, {Sid.Value});";
-            await cmd.ExecuteNonQueryAsync();
+        var insertedChRes = await Db.From<Challenge>().Insert(ch);
+        var createdCh = insertedChRes.Models.FirstOrDefault() ?? ch;
+
+        if (createdCh.Cid > 0)
+        {
+            await Db.From<ChallengeSection>().Insert(new ChallengeSection
+            {
+                Cid = createdCh.Cid,
+                Sid = Sid.Value
+            });
         }
 
         showAddMissionModal = false;
-        await LoadAdminData();
+        lastLoadedSid = null;
+        await LoadSectionDetails();
     }
 
     private void TerminateSession()

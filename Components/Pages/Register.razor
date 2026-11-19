@@ -1,8 +1,6 @@
 @page "/register"
-@using Microsoft.EntityFrameworkCore
-@using BitFlipBlazor.Data
 @using BitFlipBlazor.Models
-@inject AppDbContext Db
+@inject Supabase.Client Db
 @inject NavigationManager Nav
 
 <PageTitle>Agent Enrollment</PageTitle>
@@ -96,8 +94,12 @@
             return;
         }
 
-        var exists = await Db.Users.AnyAsync(u => u.Email.ToLower() == email.Trim().ToLower());
-        if (exists)
+        var normalizedEmail = email.Trim().ToLower();
+        var existingRes = await Db.From<User>()
+            .Where(u => u.Email == normalizedEmail && u.DeletedAt == null)
+            .Get();
+
+        if (existingRes.Models.Any())
         {
             errorMessage = "An agent with this email address already exists.";
             return;
@@ -108,24 +110,23 @@
             var newUser = new User
             {
                 Name = name.Trim(),
-                Email = email.Trim().ToLower(),
+                Email = normalizedEmail,
                 Password = password,
                 Role = role,
                 IsActive = 1
             };
 
-            Db.Users.Add(newUser);
-            await Db.SaveChangesAsync();
+            var insertedRes = await Db.From<User>().Insert(newUser);
+            var createdUser = insertedRes.Models.FirstOrDefault() ?? newUser;
 
-            if (role == "STUDENT")
+            if (role == "STUDENT" && createdUser.Uid > 0)
             {
                 var newStudent = new Student
                 {
-                    StudId = newUser.Uid,
+                    StudId = createdUser.Uid,
                     Rank = "Novice"
                 };
-                Db.Students.Add(newStudent);
-                await Db.SaveChangesAsync();
+                await Db.From<Student>().Insert(newStudent);
             }
 
             successMessage = "Agent enrolled successfully. Redirecting to HUD...";

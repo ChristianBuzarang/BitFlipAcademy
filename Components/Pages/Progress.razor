@@ -1,9 +1,8 @@
 @page "/progress"
-@using BitFlipBlazor.Data
 @using BitFlipBlazor.Models
 @using BitFlipBlazor.Services
-@using Microsoft.EntityFrameworkCore
-@inject AppDbContext Db
+@using Supabase.Postgrest
+@inject Supabase.Client Db
 @inject UserSession Session
 @inject NavigationManager Nav
 
@@ -143,43 +142,59 @@
             return;
         }
 
-        var user = await Db.Users.FirstOrDefaultAsync(u => u.Uid == StudentId.Value);
-        var student = await Db.Students.FirstOrDefaultAsync(s => s.StudId == StudentId.Value);
-        
+        var userRes = await Db.From<User>()
+            .Where(u => u.Uid == StudentId.Value && u.DeletedAt == null)
+            .Get();
+        var user = userRes.Models.FirstOrDefault();
+
+        var studentRes = await Db.From<Student>()
+            .Where(s => s.StudId == StudentId.Value && s.DeletedAt == null)
+            .Get();
+        var student = studentRes.Models.FirstOrDefault();
+
         if (user != null) studentName = user.Name;
         if (student != null) studentRank = student.Rank;
 
+        var studRecRes = await Db.From<StudentRecord>()
+            .Where(sr => sr.Studid == StudentId.Value && sr.DeletedAt == null)
+            .Get();
+        var srids = studRecRes.Models.Select(sr => sr.Srid).Distinct().ToHashSet();
+
         historyLogs.Clear();
-        using (var cmd = Db.Database.GetDbConnection().CreateCommand())
+
+        if (srids.Count > 0)
         {
-            await Db.Database.OpenConnectionAsync();
-            cmd.CommandText = @"
-                SELECT c.cid, c.category, c.target_number, r.final_score, r.time_taken, r.date_completed, r.is_passed
-                FROM tblscorerecord r
-                JOIN tblstudent_record sr ON r.srid = sr.srid
-                JOIN tblchallenge_record cr ON r.srid = cr.srid
-                JOIN tblchallenge c ON cr.cid = c.cid
-                WHERE sr.studid = @studid
-                ORDER BY r.date_completed DESC;";
+            var scoresRes = await Db.From<ScoreRecord>()
+                .Where(r => r.DeletedAt == null)
+                .Order(r => r.DateCompleted, Constants.Ordering.Descending)
+                .Get();
 
-            var pStud = cmd.CreateParameter();
-            pStud.ParameterName = "@studid";
-            pStud.Value = StudentId.Value;
-            cmd.Parameters.Add(pStud);
+            var chRecRes = await Db.From<ChallengeRecord>()
+                .Where(cr => cr.DeletedAt == null)
+                .Get();
+            var cidBySrid = chRecRes.Models
+                .Where(cr => srids.Contains(cr.Srid))
+                .GroupBy(cr => cr.Srid)
+                .ToDictionary(g => g.Key, g => g.First().Cid);
 
-            using (var reader = await cmd.ExecuteReaderAsync())
+            var challengesRes = await Db.From<Challenge>()
+                .Where(c => c.DeletedAt == null)
+                .Get();
+            var challengeMap = challengesRes.Models.ToDictionary(c => c.Cid);
+
+            foreach (var r in scoresRes.Models.Where(r => srids.Contains(r.Srid)))
             {
-                while (await reader.ReadAsync())
+                if (cidBySrid.TryGetValue(r.Srid, out var cid) && challengeMap.TryGetValue(cid, out var ch))
                 {
                     historyLogs.Add(new ProgressLogDto
                     {
-                        Cid = reader.GetInt32(0),
-                        Category = reader.GetString(1),
-                        TargetNumber = reader.GetInt32(2),
-                        FinalScore = reader.GetInt32(3),
-                        TimeTaken = reader.GetInt32(4),
-                        DateCompleted = reader.GetDateTime(5),
-                        IsPassed = reader.GetInt32(6)
+                        Cid = ch.Cid,
+                        Category = ch.Category,
+                        TargetNumber = ch.TargetNumber,
+                        FinalScore = r.FinalScore,
+                        TimeTaken = r.TimeTaken,
+                        DateCompleted = r.DateCompleted,
+                        IsPassed = r.IsPassed
                     });
                 }
             }

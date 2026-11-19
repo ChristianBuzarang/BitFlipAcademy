@@ -1,10 +1,8 @@
 @page "/play"
 @implements IDisposable
-@using BitFlipBlazor.Data
 @using BitFlipBlazor.Models
 @using BitFlipBlazor.Services
-@using Microsoft.EntityFrameworkCore
-@inject AppDbContext Db
+@inject Supabase.Client Db
 @inject UserSession Session
 @inject ScoreService ScoreService
 @inject NavigationManager Nav
@@ -158,7 +156,11 @@
             return;
         }
 
-        challenge = await Db.Challenges.FirstOrDefaultAsync(c => c.Cid == ChallengeId.Value);
+        var res = await Db.From<Challenge>()
+            .Where(c => c.Cid == ChallengeId.Value && c.DeletedAt == null)
+            .Get();
+        challenge = res.Models.FirstOrDefault();
+
         if (challenge != null)
         {
             timeLeft = challenge.TimeLimit;
