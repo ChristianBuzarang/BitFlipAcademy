@@ -1,21 +1,23 @@
 using BitFlipBlazor.Components;
-using BitFlipBlazor.Data;
 using BitFlipBlazor.Services;
-using Microsoft.EntityFrameworkCore;
+using Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var url = builder.Configuration["Supabase:Url"]
+    ?? throw new InvalidOperationException("Missing Supabase:Url configuration.");
+var key = builder.Configuration["Supabase:Key"]
+    ?? throw new InvalidOperationException("Missing Supabase:Key configuration.");
 
-if (string.IsNullOrWhiteSpace(connectionString))
+var supabase = new Supabase.Client(url, key, new SupabaseOptions
 {
-    throw new InvalidOperationException("Connection string 'DefaultConnection' was not found in appsettings.json. Please change the connection string. from appsettings.final.json to the appsettings.json file.");
-}
+    AutoConnectRealtime = false
+});
+await supabase.InitializeAsync();
 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddSingleton(supabase);
 
 builder.Services.AddScoped<MissionService>();
 builder.Services.AddScoped<ScoreService>();
@@ -23,11 +25,9 @@ builder.Services.AddScoped<UserSession>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -36,12 +36,5 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
-
-// Automatically create the database and schema if missing
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<BitFlipBlazor.Data.AppDbContext>();
-    dbContext.Database.EnsureCreated();
-}
 
 app.Run();
